@@ -15,7 +15,7 @@ export type newPostForm = {
   bathrooms?: string;
   bedrooms?: string;
   area?: string;
-  photoURLPREVIEW?: string[];
+  photoURLPREVIEW?: { image: string; col: string; id: string }[];
   photoFiles?: File[];
 };
 
