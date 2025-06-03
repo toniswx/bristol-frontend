@@ -24,7 +24,6 @@ export const getUserData = async (): Promise<User | undefined> => {
     if (!post) return;
     const data: User = await post.json();
 
-    console.log(data);
     return data;
   } catch (err) {
     console.error(err);

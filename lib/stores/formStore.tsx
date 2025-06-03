@@ -1,3 +1,4 @@
+import { CustomFile } from "@/components/post-form/images";
 import { create } from "zustand";
 
 export type newPostForm = {
@@ -15,8 +16,13 @@ export type newPostForm = {
   bathrooms?: string;
   bedrooms?: string;
   area?: string;
-  photoURLPREVIEW?: { image: string; col: string; id: string }[];
-  photoFiles?: File[];
+  photoURLPREVIEW?: {
+    image: string;
+    file_name: string;
+    id: string;
+    index: number;
+  }[];
+  photoFiles?: CustomFile[];
 };
 
 export type formState = {
@@ -48,7 +54,7 @@ export const useFormState = create<formState>()((set) => ({
     photoURLPREVIEW: [],
     photoFiles: [],
   },
-  formStep: 4,
+  formStep: 3,
   setFormStep: () => {
     const nextStep = useFormState.getState().formStep + 1;
     set({ formStep: nextStep });

@@ -114,7 +114,7 @@ function DetailForm() {
   const handleGoBack = () => formState.setGoBackOneStep();
 
   return (
-    <div>
+    <div className="my-3">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className=" space-y-5  ">

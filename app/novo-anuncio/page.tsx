@@ -105,7 +105,7 @@ function Page() {
             )}
           </div>
 
-          <div className="w-full mt-4">
+          <div className="w-full mt-1">
             <DndContext>{f()[formState.formStep].form}</DndContext>
           </div>
         </div>
