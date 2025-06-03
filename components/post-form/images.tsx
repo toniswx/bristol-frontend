@@ -28,11 +28,13 @@ import {
   ArrowRight,
   ChevronDown,
   CircleFadingArrowUpIcon,
+  GalleryThumbnailsIcon,
   InfoIcon,
   MoreVerticalIcon,
   OctagonAlert,
   Plus,
   Star,
+  Trash,
   X,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -49,6 +51,8 @@ import { Droppable } from "../dnd/droppable";
 import { Draggable } from "../dnd/draggable";
 import CarouselWithThumbs from "./thumbs";
 import Thumbs from "./thumbs";
+import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export type previewImage = {
   image: string;
@@ -68,6 +72,9 @@ function ImagesForm() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isDisabled, setDesabled] = useState(false);
+  const [isDeletingImages, setIsDeletingImages] = useState(false);
+  const [imagesBulkDeletId, setImagesBulkDeletId] = useState<string[]>([]);
 
   const [imageFiles, setImageFiles] = useState<CustomFile[]>(
     formState.form.photoFiles ? formState.form.photoFiles : []
@@ -178,8 +185,8 @@ function ImagesForm() {
 
   const handleGrid = (index: number) => {
     if (index === 0 || index === 3)
-      return "w-full  h-full    object-cover aspect-square col-span-2 row-span-2";
-    else return "w-full h-full  object-cover aspect-square";
+      return "w-full  h-full    object-cover aspect-square col-span-2 row-span-2 relative";
+    else return "w-full h-full  object-cover aspect-square relative";
   };
 
   const setImageToFirst = (imagePreview: previewImage) => {
@@ -218,7 +225,16 @@ function ImagesForm() {
   const handleCloseModal = () => {
     setIsOpen(false);
   };
+  const hadleDeleteMultipleImages = (imageId: string) => {
+    setImagesBulkDeletId((oldValue) => [...oldValue, imageId]);
+  };
 
+  const setDeleteMultipleImages = () => {
+    if (previewImages.length && imageFiles.length < 0) return;
+
+    setIsDeletingImages((oldValue) => !oldValue);
+    setDesabled((oldValue) => !oldValue);
+  };
   return (
     <div>
       {isOpen ? (
@@ -227,87 +243,121 @@ function ImagesForm() {
         <>
           {" "}
           <div className="w-full ">
-            <div className="w-full  ">
-              <Label
-                className={
-                  error
-                    ? "flex flex-col items-center justify-center h-full  p-2 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600 "
-                    : "flex flex-col items-center justify-center h-full p-2  border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-                }
-              >
-                <div className="flex flex-col items-center justify-center ">
-                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                    Clique para selecionar imagens
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    WEBP, PNG, JPG
-                  </p>
-                  {error ? <p className="text-xs">Selecione 4 imagens</p> : ""}
-                </div>
-                <Input
-                  className="appearance-none hidden w-full"
-                  type="file"
-                  accept="image/jpeg, image/png , image/webp"
-                  ref={inputImageRef}
-                  onChange={(e) => handleImage(e)}
-                />
+            <div className="grid grid-cols-3   gap-x-2 ">
+              <Label>
+                <Button
+                  onClick={() => inputImageRef.current?.click()}
+                  variant={"secondary"}
+                  className="bg-blue-100 w-full  border-blue-300 border hover:bg-blue-50 cursor-pointer"
+                >
+                  <Plus />
+                  Adicionar imagem
+                  <Input
+                    className="hidden"
+                    type="file"
+                    accept="image/jpeg, image/png, image/webp"
+                    ref={inputImageRef}
+                    onChange={handleImage}
+                  />
+                </Button>
               </Label>
+
+              <Button
+                variant={"destructive"}
+                onClick={setDeleteMultipleImages}
+                className="bg-red-100 border-red-300 border hover:bg-red-50  text-black cursor-pointer"
+              >
+                {" "}
+                <Trash />
+                Deletar imagens
+              </Button>
+              <Button
+                variant={"outline"}
+                className="bg-neutral-100  border-neutral-300 border hover:bg-neutral-50 cursor-pointer"
+              >
+                {" "}
+                <GalleryThumbnailsIcon /> Ver todas as imagens
+              </Button>
             </div>
 
             <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
               <div className="grid grid-cols-4 my-4 gap-5 ">
                 {previewImages.map((image, index) => {
                   return (
-                    <div className={handleGrid(index)} key={index}>
+                    <div
+                      className={cn(
+                        imagesBulkDeletId.includes(image.id)
+                          ? "border border-red-600"
+                          : "",
+                        handleGrid(index)
+                      )}
+                      key={index}
+                    >
                       <Droppable id={image.id} key={image.id}>
                         <div className="w-full  flex items-center justify-center relative ">
-                          <div
-                            className={
-                              isDragging && activeId === image.id
-                                ? "hidden "
-                                : "[&>*]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md divide-x divide-border/40 flex absolute top-0 right-0 m-4 "
-                            }
-                          >
-                            <Button>
-                              {index === 0 ? "Imagem principal" : index + 1}
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="icon">
-                                  <ChevronDown />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="min-w-52">
-                                {index === 0 ? null : (
+                          {isDeletingImages ? (
+                            <div
+                              className={
+                                "[&>*]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md divide-x divide-border/40 flex absolute top-0 right-0 m-4 "
+                              }
+                            >
+                              <div className="">
+                                <Checkbox
+                                  className="w-9 h-9 bg-white "
+                                  onClick={() => {
+                                    hadleDeleteMultipleImages(image.id);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className={
+                                isDragging && activeId === image.id
+                                  ? "hidden "
+                                  : "[&>*]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md divide-x divide-border/40 flex absolute top-0 right-0 m-4 "
+                              }
+                            >
+                              <Button>
+                                {index === 0 ? "Imagem principal" : index + 1}
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon">
+                                    <ChevronDown />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="min-w-52">
+                                  {index === 0 ? null : (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setImageToFirst(image);
+                                      }}
+                                    >
+                                      Selecionar para imagem principal
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem
+                                    variant="destructive"
                                     onClick={() => {
-                                      setImageToFirst(image);
+                                      deleteImage(image);
                                     }}
                                   >
-                                    Selecionar para imagem principal
+                                    Deletar imagem
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onClick={() => {
-                                    deleteImage(image);
-                                  }}
-                                >
-                                  Deletar imagem
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  variant="default"
-                                  onClick={() => {
-                                    setIsOpen(true);
-                                  }}
-                                >
-                                  Ver imagens
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          <Draggable id={image.id}>
+                                  <DropdownMenuItem
+                                    variant="default"
+                                    onClick={() => {
+                                      setIsOpen(true);
+                                    }}
+                                  >
+                                    Ver imagens
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
+                          <Draggable id={image.id} isDisabled={isDisabled}>
                             <Image
                               src={image.image}
                               alt="image from form "

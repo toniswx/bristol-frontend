@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 export function Draggable(props) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: props.id,
+    disabled: props.isDisabled,
   });
   const style = {
     // Outputs `translate3d(x, y, 0)`

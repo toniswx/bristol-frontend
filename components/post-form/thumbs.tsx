@@ -51,8 +51,8 @@ export default function CarouselWithThumbs({
   return (
     <div className="absolute top-0 right-0 bg-white  w-full h-full flex items-center  justify-center">
       <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between">
-          <h2 className="my-2">
+        <div className="flex items-center justify-between my-2">
+          <h2 className="my-2 text-sm font-medium">
             {current + 1} de {count}
           </h2>
           <Button variant={"outline"} onClick={handleCloseModal}>
