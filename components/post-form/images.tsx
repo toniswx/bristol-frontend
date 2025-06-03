@@ -215,10 +215,14 @@ function ImagesForm() {
     setPreviewImages(previewImagesFiltered);
   };
 
+  const handleCloseModal = () => {
+    setIsOpen(false);
+  };
+
   return (
     <div>
       {isOpen ? (
-        <Thumbs images={previewImages} />
+        <Thumbs images={previewImages} handleCloseModal={handleCloseModal} />
       ) : (
         <>
           {" "}
