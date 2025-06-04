@@ -6,7 +6,7 @@ export function Droppable(props) {
     id: props.id,
   });
   const style = {
-    opacity: isOver ? 1 : 0.7,
+    opacity: isOver ? 1 : 1,
   };
 
   return (

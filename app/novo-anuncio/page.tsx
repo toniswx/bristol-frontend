@@ -10,7 +10,12 @@ import { Progress } from "@/components/ui/progress";
 import { useFormState } from "@/lib/stores/formStore";
 import { DndContext } from "@dnd-kit/core";
 import {
+  BookUser,
   CircleFadingArrowUpIcon,
+  ImagePlus,
+  ListChecks,
+  MapPinned,
+  NotebookPen,
   OctagonAlert,
   ShieldAlert,
 } from "lucide-react";
@@ -30,6 +35,7 @@ function Page() {
         formId: "TitleForm",
 
         form: <TitleDescriptionForm key={"TitleForm"} />,
+        icon: <NotebookPen />,
       },
       {
         title: "Informe a localização do imóvel",
@@ -39,6 +45,7 @@ function Page() {
           "Verifique se os dados estão corretos. Você pode ajustar manualmente se necessário.",
         formId: "LocationForm",
         form: <LocationForm key={"LocationForm"} />,
+        icon: <MapPinned />,
       },
       {
         title: "Detalhes do imóvel",
@@ -48,6 +55,7 @@ function Page() {
           "Quanto mais informações precisas você fornecer, melhores serão os resultados do seu anúncio",
         formId: "DetailForm",
         form: <DetailForm key={"DetailForm"} />,
+        icon: <ListChecks />,
       },
       {
         title: "Adicione fotos do imóvel",
@@ -59,6 +67,7 @@ function Page() {
 
         formId: "ImagesForm",
         form: <ImagesForm key={"ImagesForm"} />,
+        icon: <ImagePlus />,
       },
       {
         title: "Revise seu anúncio",
@@ -67,6 +76,7 @@ function Page() {
         helpText: "Você pode voltar clicando no bloco onde deseja editar.",
         formId: "ResumeForm",
         form: <Resume key={"ResumeForm"} />,
+        icon: <BookUser />,
       },
     ];
   };
@@ -79,30 +89,19 @@ function Page() {
   return (
     <div className="w-full min-h-screen flex items-center justify-start flex-col">
       <Progress value={x} />{" "}
-      <div className="w-1/2 ">
-        <div className="w-full flex justify-center items-center flex-col  p-4 ">
+      <div className="w-full flex items-start justify-start  p-30 py-2  ">
+        <div className="w-96 h-full space-y-2 p-4 "></div>
+        <div className="w-1/2 flex justify-center items-center flex-col   p-4 ">
           <div className="w-full mb-2 space-y-1 ">
-            <h2 className="text-lg  font-semibold">
-              {f()[formState.formStep].title}
-            </h2>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-start space-x-2">
+              <h1 className="scroll-m-20 text-center text-2xl font-extrabold tracking-tight text-balance">
+                {f()[formState.formStep].title}{" "}
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-md">
               {" "}
               {f()[formState.formStep].formDescription}
             </p>
-            <Alert className="bg-blue-500/10 dark:bg-blue-600/30 border-blue-300 dark:border-blue-600/70">
-              {" "}
-              <CircleFadingArrowUpIcon className="h-4 w-4 !text-blue-500" />{" "}
-              <AlertTitle>{f()[formState.formStep].helpText}</AlertTitle>{" "}
-            </Alert>
-            {f()[formState.formStep].imageHelperText && (
-              <Alert className="bg-emerald-500/10 dark:bg-emerald-600/30 border-emerald-300 dark:border-emerald-600/70">
-                {" "}
-                <CircleFadingArrowUpIcon className="h-4 w-4 !text-emerald-500" />{" "}
-                <AlertTitle>
-                  {f()[formState.formStep].imageHelperText}
-                </AlertTitle>{" "}
-              </Alert>
-            )}
           </div>
 
           <div className="w-full mt-1">

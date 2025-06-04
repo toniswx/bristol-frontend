@@ -8,8 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import {
   Carousel,
@@ -28,13 +31,17 @@ import {
   ArrowRight,
   ChevronDown,
   CircleFadingArrowUpIcon,
+  GalleryHorizontalEnd,
   GalleryThumbnailsIcon,
+  Grid,
   InfoIcon,
+  LayoutList,
   MoreVerticalIcon,
   OctagonAlert,
   Plus,
   Star,
   Trash,
+  Trash2Icon,
   X,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -53,12 +60,53 @@ import CarouselWithThumbs from "./thumbs";
 import Thumbs from "./thumbs";
 import { Checkbox } from "../ui/checkbox";
 import { cn } from "@/lib/utils";
+import {
+  Menubar,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
+import { ImageIcon } from "@radix-ui/react-icons";
+import NoImageSelected from "./no-image";
+import ImageList from "./image-list";
+import { toast } from "sonner";
+import { data } from "../custom/estate-filter";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { MenuIcon } from "lucide-react";
 
 export type previewImage = {
   image: string;
   file_name: string;
   id: string;
   index: number;
+  size: string;
+  type: string;
 };
 
 export interface CustomFile extends File {
@@ -71,10 +119,14 @@ function ImagesForm() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [interfaceView, setInterfaceView] = useState("dnd-grid");
   const [isDisabled, setDesabled] = useState(false);
   const [isDeletingImages, setIsDeletingImages] = useState(false);
+  const [currentImage, setCurrentImage] = useState<previewImage | null>(null);
+
   const [imagesBulkDeletId, setImagesBulkDeletId] = useState<string[]>([]);
+  const [pureImageFiles, setPureImagefiles] = useState<File[]>([]);
+  const [isDialogOpen, setDialogOpen] = useState<boolean>(false);
 
   const [imageFiles, setImageFiles] = useState<CustomFile[]>(
     formState.form.photoFiles ? formState.form.photoFiles : []
@@ -101,13 +153,22 @@ function ImagesForm() {
     if (files && files.length > 0) {
       const image = files[0] as CustomFile;
 
+      const maxSize = 1.9;
+      if (image.size > maxSize * 1024 * 1024) {
+        toast.error(`O tamanho do arquivo excede o limite de ${maxSize}MB`);
+        return;
+      }
+
       const url = URL.createObjectURL(image);
 
       const isDuplicate = imageFiles.find(
         (imageFile) => imageFile.name === image.name
       );
 
-      if (isDuplicate) return;
+      if (isDuplicate) {
+        toast.info(`Selecione imagens diferentes`);
+        return;
+      }
 
       const customImageFileObject = {
         lastModified: image.lastModified,
@@ -122,8 +183,11 @@ function ImagesForm() {
         file_name: customImageFileObject.name,
         id: customImageFileObject.id,
         index: previewImages.length,
+        type: customImageFileObject.type,
+        size: customImageFileObject.size,
       };
 
+      setPureImagefiles((oldValue) => [...oldValue, image]);
       setImageFiles((oldValue) => [...oldValue, customImageFileObject]);
       setPreviewImages((oldValue) => [...oldValue, imagePreviewObject]);
     }
@@ -184,7 +248,7 @@ function ImagesForm() {
   }
 
   const handleGrid = (index: number) => {
-    if (index === 0 || index === 3)
+    if (index === 0)
       return "w-full  h-full    object-cover aspect-square col-span-2 row-span-2 relative";
     else return "w-full h-full  object-cover aspect-square relative";
   };
@@ -223,8 +287,9 @@ function ImagesForm() {
   };
 
   const handleCloseModal = () => {
-    setIsOpen(false);
+    setDialogOpen(false);
   };
+
   const hadleDeleteMultipleImages = (imageId: string) => {
     setImagesBulkDeletId((oldValue) => [...oldValue, imageId]);
   };
@@ -235,23 +300,48 @@ function ImagesForm() {
     setIsDeletingImages((oldValue) => !oldValue);
     setDesabled((oldValue) => !oldValue);
   };
+
+  const handleCurrentView = (view: string) => {
+    setInterfaceView(view);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    else if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    else return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleDialogOpen = () => {
+    setDialogOpen((oldValue: boolean) => !oldValue);
+    document.body.style.pointerEvents = "auto";
+  };
+
+  const handleSetCurrentImage = (currentImage: previewImage) => {
+    setCurrentImage(currentImage);
+  };
+  const handleCleanCurrentImage = () => {
+    setCurrentImage(null);
+    setDialogOpen(false);
+  };
+
+  useEffect(() => {
+    document.body.style.pointerEvents = "auto";
+
+    if (currentImage !== null) {
+      setDialogOpen(true);
+    } else {
+      setDialogOpen(false);
+    }
+  }, [currentImage]);
   return (
     <div>
-      {isOpen ? (
-        <Thumbs images={previewImages} handleCloseModal={handleCloseModal} />
-      ) : (
-        <>
-          {" "}
-          <div className="w-full ">
-            <div className="grid grid-cols-3   gap-x-2 ">
-              <Label>
-                <Button
-                  onClick={() => inputImageRef.current?.click()}
-                  variant={"secondary"}
-                  className="bg-blue-100 w-full  border-blue-300 border hover:bg-blue-50 cursor-pointer"
-                >
-                  <Plus />
-                  Adicionar imagem
+      <div className="w-full gap-y-4 py-2 ">
+        <div className="flex items-center justify-between border rounded-md flex-row-reverse ">
+          <Menubar className=" shadow-none border-none">
+            <MenubarMenu>
+              <MenubarTrigger className="">
+                Arquivo
+                <Label>
                   <Input
                     className="hidden"
                     type="file"
@@ -259,29 +349,117 @@ function ImagesForm() {
                     ref={inputImageRef}
                     onChange={handleImage}
                   />
-                </Button>
-              </Label>
+                </Label>
+              </MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem onClick={() => inputImageRef.current?.click()}>
+                  Adicionar foto <MenubarShortcut>⌘O</MenubarShortcut>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
 
-              <Button
-                variant={"destructive"}
-                onClick={setDeleteMultipleImages}
-                className="bg-red-100 border-red-300 border hover:bg-red-50  text-black cursor-pointer"
+            <MenubarMenu>
+              <MenubarTrigger>Editar</MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem>
+                  Deletar fotos <MenubarShortcut>⌘⌫</MenubarShortcut>
+                </MenubarItem>
+                <MenubarItem>
+                  Deletar todas as fotos <MenubarShortcut>⇧⌘⌫</MenubarShortcut>
+                </MenubarItem>
+                <MenubarSeparator />
+                <MenubarItem>
+                  Rotacionar <MenubarShortcut>⌘R</MenubarShortcut>
+                </MenubarItem>
+                <MenubarItem>
+                  Recortar <MenubarShortcut>⌘C</MenubarShortcut>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+
+            <MenubarMenu>
+              <MenubarTrigger>Visualização</MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem
+                  onClick={() => {
+                    handleCurrentView("slide");
+                  }}
+                >
+                  Slide{" "}
+                  <MenubarShortcut>
+                    {" "}
+                    <GalleryHorizontalEnd className="h-4 w-4" />
+                  </MenubarShortcut>
+                </MenubarItem>
+                <MenubarItem
+                  onClick={() => {
+                    handleCurrentView("list");
+                  }}
+                >
+                  Lista{" "}
+                  <MenubarShortcut>
+                    {" "}
+                    <LayoutList className="h-4 w-4" />
+                  </MenubarShortcut>
+                </MenubarItem>
+                <MenubarItem
+                  onClick={() => {
+                    handleCurrentView("dnd-grid");
+                  }}
+                >
+                  Grid{" "}
+                  <MenubarShortcut>
+                    {" "}
+                    <Grid className="h-4 w-4" />
+                  </MenubarShortcut>
+                </MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+          </Menubar>
+          <div className=" flex items-center justify-between p-1">
+            <ToggleGroup type="single" size={"default"} defaultValue="'grid">
+              <ToggleGroupItem
+                value="grid"
+                aria-label="Toggle grid"
+                onClick={() => {
+                  handleCurrentView("dnd-grid");
+                }}
               >
-                {" "}
+                <Grid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="slide"
+                aria-label="Toggle slide"
+                onClick={() => {
+                  handleCurrentView("slide");
+                }}
+              >
+                <GalleryHorizontalEnd className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="strikethrough"
+                aria-label="Toggle strikethrough"
+                onClick={() => {
+                  handleCurrentView("list");
+                }}
+              >
+                <LayoutList className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            {isDragging ? (
+              <Button variant={"destructive"} size={"icon"}>
                 <Trash />
-                Deletar imagens
               </Button>
-              <Button
-                variant={"outline"}
-                className="bg-neutral-100  border-neutral-300 border hover:bg-neutral-50 cursor-pointer"
-              >
-                {" "}
-                <GalleryThumbnailsIcon /> Ver todas as imagens
-              </Button>
-            </div>
+            ) : null}
+          </div>
+        </div>
 
+        {interfaceView === "dnd-grid" ? (
+          imageFiles.length === 0 ? (
+            <NoImageSelected />
+          ) : (
             <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-              <div className="grid grid-cols-4 my-4 gap-5 ">
+              <div className="grid grid-cols-4 my-1 gap-5 ">
                 {previewImages.map((image, index) => {
                   return (
                     <div
@@ -295,69 +473,61 @@ function ImagesForm() {
                     >
                       <Droppable id={image.id} key={image.id}>
                         <div className="w-full  flex items-center justify-center relative ">
-                          {isDeletingImages ? (
-                            <div
-                              className={
-                                "[&>*]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md divide-x divide-border/40 flex absolute top-0 right-0 m-4 "
-                              }
-                            >
-                              <div className="">
-                                <Checkbox
-                                  className="w-9 h-9 bg-white "
+                          {isDragging ? null : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                asChild
+                                className="absolute right-0 top-0 m-4"
+                              >
+                                <Button
+                                  size={"icon"}
+                                  variant={"secondary"}
+                                  className="p-3 w-5 h-5"
+                                >
+                                  <MenuIcon />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="text-xs">
+                                {index === 0 ? null : (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setImageToFirst(image);
+                                    }}
+                                  >
+                                    Nova foto de capa
+                                    <DropdownMenuShortcut>
+                                      <Star />
+                                    </DropdownMenuShortcut>
+                                  </DropdownMenuItem>
+                                )}
+
+                                <DropdownMenuItem
                                   onClick={() => {
-                                    hadleDeleteMultipleImages(image.id);
+                                    handleSetCurrentImage(image);
                                   }}
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div
-                              className={
-                                isDragging && activeId === image.id
-                                  ? "hidden "
-                                  : "[&>*]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md divide-x divide-border/40 flex absolute top-0 right-0 m-4 "
-                              }
-                            >
-                              <Button>
-                                {index === 0 ? "Imagem principal" : index + 1}
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="icon">
-                                    <ChevronDown />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="min-w-52">
-                                  {index === 0 ? null : (
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setImageToFirst(image);
-                                      }}
-                                    >
-                                      Selecionar para imagem principal
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuItem
-                                    variant="destructive"
-                                    onClick={() => {
-                                      deleteImage(image);
-                                    }}
-                                  >
-                                    Deletar imagem
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    variant="default"
-                                    onClick={() => {
-                                      setIsOpen(true);
-                                    }}
-                                  >
-                                    Ver imagens
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                                >
+                                  Ver imagem
+                                  <DropdownMenuShortcut>
+                                    <ImageIcon />
+                                  </DropdownMenuShortcut>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem variant="destructive">
+                                  Deletar imagem
+                                  <DropdownMenuShortcut>
+                                    <Trash />
+                                  </DropdownMenuShortcut>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                           <Draggable id={image.id} isDisabled={isDisabled}>
+                            <Badge
+                              className="absolute m-4 text-xs"
+                              variant={"secondary"}
+                            >
+                              {index === 0 ? "Imagem principal" : index + 1}
+                            </Badge>
+
                             <Image
                               src={image.image}
                               alt="image from form "
@@ -377,21 +547,212 @@ function ImagesForm() {
                 })}
               </div>
             </DndContext>
+          )
+        ) : null}
+      </div>
+
+      {interfaceView === "slide" ? (
+        <Thumbs images={previewImages} handleCloseModal={handleCloseModal} />
+      ) : null}
+      {interfaceView === "list" ? (
+        previewImages.length === 0 ? (
+          <NoImageSelected />
+        ) : (
+          <div className="grid w-full [&>div]:max-h-[300px] [&>div]:border [&>div]:rounded">
+            <Table className="overflow-x-hidden">
+              <TableHeader className="overflow-x-hidden">
+                <TableRow className="[&>*]:whitespace-nowrap sticky top-0 bg-background after:content-[''] after:inset-x-0 after:h-px after:bg-border after:absolute after:bottom-0 ">
+                  <TableHead className="w-[100px] ">Visualização</TableHead>
+                  <TableHead className="w-[100px]  text-start">
+                    Tamanho
+                  </TableHead>
+                  <TableHead className="w-[100px]  text-start">Nome</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="right-0 text-right"> </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="overflow-hidden">
+                {previewImages.map((image, index) => {
+                  return (
+                    <TableRow
+                      key={index}
+                      className="odd:bg-muted/50 [&>*]:whitespace-nowrap"
+                    >
+                      <TableCell className="flex items-center justify-center">
+                        <Image
+                          src={image.image}
+                          className="aspect-auto object-cover"
+                          width={70}
+                          height={10}
+                          alt="image from image list form"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {formatFileSize(parseInt(image.size))}{" "}
+                      </TableCell>
+                      <TableCell className="font-medium  w-[100px] ">
+                        {image.file_name}
+                      </TableCell>
+                      <TableCell>{image.type}</TableCell>
+                      <TableCell className="right-0 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size={"icon"} variant={"secondary"}>
+                              <MenuIcon />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem>Billing</DropdownMenuItem>
+                            <DropdownMenuItem>Team</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setCurrentImage(image);
+                              }}
+                            >
+                              Ver imagem
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                deleteImage(image);
+                              }}
+                            >
+                              Deletar imagem
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
-          <div className="flex items-center justify-between mt-3 ">
-            <Button
-              type="button"
-              onClick={() => {
-                handleGoBack();
-              }}
-            >
-              <ArrowLeft /> Voltar
-            </Button>
-            <Button type="submit" onClick={handleNext}>
-              Próximo <ArrowRight />
-            </Button>
-          </div>
-        </>
+        )
+      ) : null}
+      {interfaceView === "list" ? (
+        previewImages.length === 0 ? (
+          <NoImageSelected />
+        ) : (
+          <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+            <div className="grid w-full [&>div]:max-h-[300px] [&>div]:border [&>div]:rounded">
+              <Table className="overflow-x-hidden">
+                <TableHeader className="overflow-x-hidden">
+                  <TableRow className="[&>*]:whitespace-nowrap sticky top-0 bg-background after:content-[''] after:inset-x-0 after:h-px after:bg-border after:absolute after:bottom-0 ">
+                    <TableHead className="w-[100px] ">Visualização</TableHead>
+                    <TableHead className="w-[100px]  text-start">
+                      Tamanho
+                    </TableHead>
+                    <TableHead className="w-[100px]  text-start">
+                      Nome
+                    </TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="right-0 text-right"> </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="overflow-hidden">
+                  {previewImages.map((image, index) => {
+                    return (
+                      <Droppable key={index} id={image.id}>
+                        <div className="bg-red-400">
+                          <Draggable id={image.id}>
+                            <TableRow
+                              key={index}
+                              className="odd:bg-muted/50 [&>*]:whitespace-nowrap bg-amber-400"
+                            >
+                              <TableCell className="flex items-center justify-center">
+                                <Image
+                                  src={image.image}
+                                  className="aspect-auto object-cover"
+                                  width={70}
+                                  height={10}
+                                  alt="image from image list form"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                {formatFileSize(parseInt(image.size))}{" "}
+                              </TableCell>
+                              <TableCell className="font-medium  w-[100px] ">
+                                {image.file_name}
+                              </TableCell>
+                              <TableCell>{image.type}</TableCell>
+                              <TableCell className="right-0 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size={"icon"} variant={"secondary"}>
+                                      <MenuIcon />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem>Billing</DropdownMenuItem>
+                                    <DropdownMenuItem>Team</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setCurrentImage(image);
+                                      }}
+                                    >
+                                      Ver imagem
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onClick={() => {
+                                        deleteImage(image);
+                                      }}
+                                    >
+                                      Deletar imagem
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          </Draggable>
+                        </div>
+                      </Droppable>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </DndContext>
+        )
+      ) : null}
+
+      <div className="flex items-center justify-between mt-3 ">
+        <Button
+          type="button"
+          onClick={() => {
+            handleGoBack();
+          }}
+        >
+          <ArrowLeft /> Voltar
+        </Button>
+        <Button type="submit" onClick={handleNext}>
+          Próximo <ArrowRight />
+        </Button>
+      </div>
+      {currentImage && (
+        <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <Button
+                size={"icon"}
+                variant={"secondary"}
+                onClick={handleCleanCurrentImage}
+              >
+                <ArrowLeft />
+              </Button>
+              <DialogTitle>{currentImage.file_name}</DialogTitle>
+              <DialogDescription>{currentImage.type}</DialogDescription>
+            </DialogHeader>
+            <Image
+              src={currentImage.image}
+              className="aspect-auto object-cover"
+              width={2000}
+              height={2000}
+              alt="image from image list form"
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

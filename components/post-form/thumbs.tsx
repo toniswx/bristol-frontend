@@ -15,6 +15,8 @@ import { Images, X } from "lucide-react";
 import { previewImage } from "./images";
 import Image from "next/image";
 import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import NoImageSelected from "./no-image";
 
 export default function CarouselWithThumbs({
   images,
@@ -49,70 +51,65 @@ export default function CarouselWithThumbs({
   );
 
   return (
-    <div className="absolute top-0 right-0 bg-white  w-full h-full flex items-center  justify-center">
-      <div className="mx-auto max-w-2xl">
-        <div className="flex items-center justify-between my-2">
-          <h2 className="my-2 text-sm font-medium">
-            {current + 1} de {count}
-          </h2>
-          <Button variant={"outline"} onClick={handleCloseModal}>
-            <X />
-          </Button>
+    <div className="  p-0 rounded-md">
+      {images.length !== 0 ? (
+        <div className="mx-auto max-w-sm">
+          <Carousel setApi={setApi} className="w-full  max-w-sm ">
+            <CarouselContent>
+              {images.map((image, index) => (
+                <CarouselItem key={index}>
+                  <Image
+                    src={image.image}
+                    alt="image from form "
+                    width={1000}
+                    height={1000}
+                    className={
+                      "w-full h-full rounded-md object-contain aspect-square"
+                    }
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
+          </Carousel>
+
+          {/* Thumbnail Carousel */}
+          <Carousel
+            setApi={setThumbsApi}
+            className="mt-4 w-full "
+            opts={{
+              align: "start",
+              dragFree: true,
+            }}
+          >
+            <CarouselContent className="flex my-1">
+              {images.map((image, index) => (
+                <CarouselItem
+                  key={index}
+                  className={cn(
+                    "basis-1/6 cursor-pointer",
+                    current === index ? "opacity-100" : "opacity-50"
+                  )}
+                  onClick={() => handleThumbClick(index)}
+                >
+                  <Image
+                    src={image.image}
+                    alt="image from form "
+                    width={900}
+                    height={900}
+                    className={
+                      "w-full h-full rounded-md object-cover aspect-square"
+                    }
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         </div>
-
-        <Carousel setApi={setApi} className="w-full max-w-2xl">
-          <CarouselContent>
-            {images.map((image, index) => (
-              <CarouselItem key={index}>
-                <Image
-                  src={image.image}
-                  alt="image from form "
-                  width={1000}
-                  height={1000}
-                  className={
-                    "w-full h-full rounded-md object-contain aspect-square"
-                  }
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden sm:flex" />
-          <CarouselNext className="hidden sm:flex" />
-        </Carousel>
-
-        {/* Thumbnail Carousel */}
-        <Carousel
-          setApi={setThumbsApi}
-          className="mt-4 w-full "
-          opts={{
-            align: "start",
-            dragFree: true,
-          }}
-        >
-          <CarouselContent className="flex my-1">
-            {images.map((image, index) => (
-              <CarouselItem
-                key={index}
-                className={cn(
-                  "basis-1/6 cursor-pointer",
-                  current === index ? "opacity-100" : "opacity-50"
-                )}
-                onClick={() => handleThumbClick(index)}
-              >
-                <Image
-                  src={image.image}
-                  alt="image from form "
-                  width={900}
-                  height={900}
-                  className={
-                    "w-full h-full rounded-md object-cover aspect-square"
-                  }
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      </div>
+      ) : (
+        <NoImageSelected />
+      )}
     </div>
   );
 }
