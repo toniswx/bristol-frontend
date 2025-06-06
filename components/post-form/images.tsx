@@ -11,7 +11,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import {
@@ -27,21 +27,28 @@ import { createClient } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { getUserData } from "../AuthWrapper";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
   CircleFadingArrowUpIcon,
+  Edit,
+  Edit3,
   GalleryHorizontalEnd,
   GalleryThumbnailsIcon,
   Grid,
+  Heart,
   InfoIcon,
   LayoutList,
+  List,
+  ListIcon,
   MoreVerticalIcon,
   OctagonAlert,
   Plus,
   Star,
   Trash,
   Trash2Icon,
+  Upload,
   X,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -53,7 +60,7 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { setErrorMap } from "zod";
 import Image from "next/image";
 import { Main } from "../dnd/main";
-import { DndContext } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Droppable } from "../dnd/droppable";
 import { Draggable } from "../dnd/draggable";
 import CarouselWithThumbs from "./thumbs";
@@ -65,6 +72,7 @@ import {
   MenubarCheckboxItem,
   MenubarContent,
   MenubarItem,
+  MenubarLabel,
   MenubarMenu,
   MenubarRadioGroup,
   MenubarRadioItem,
@@ -99,6 +107,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { MenuIcon } from "lucide-react";
+import { SortableContext } from "@dnd-kit/sortable";
+import { SortableTableRow } from "./SortableRow";
+import { canExecuteHistoryAction } from "../tiptap-ui/undo-redo-button/undo-redo-button";
+import { DroppableCustom } from "../dnd/custom";
 
 export type previewImage = {
   image: string;
@@ -123,6 +135,10 @@ function ImagesForm() {
   const [isDisabled, setDesabled] = useState(false);
   const [isDeletingImages, setIsDeletingImages] = useState(false);
   const [currentImage, setCurrentImage] = useState<previewImage | null>(null);
+  const [currentImageFile, setCurrentImageFile] = useState<CustomFile | null>(
+    null
+  );
+  const [imageIdsToDelete, setImagesIdToDelete] = useState<string[]>([]);
 
   const [imagesBulkDeletId, setImagesBulkDeletId] = useState<string[]>([]);
   const [pureImageFiles, setPureImagefiles] = useState<File[]>([]);
@@ -196,6 +212,13 @@ function ImagesForm() {
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
     setIsDragging(true);
+
+    const currentFile = imageFiles.find(
+      (image) => image.id === event.active.id
+    );
+    if (!currentFile) return;
+
+    setCurrentImageFile(currentFile);
   };
 
   function handleDragEnd(event) {
@@ -204,6 +227,13 @@ function ImagesForm() {
     const { active, over } = event;
 
     if (!over || active.id === over.id) return;
+
+    const currentImage = previewImages.find((i) => i.id === active.id);
+
+    if (over.id === "deleting" && currentImage) {
+      console.log("dele");
+      deleteImage(currentImage);
+    }
 
     setPreviewImages((currentImages) => {
       const activeIndex = currentImages.findIndex(
@@ -284,14 +314,37 @@ function ImagesForm() {
 
     setImageFiles(filesFiltered);
     setPreviewImages(previewImagesFiltered);
+    setCurrentImage(null);
   };
 
   const handleCloseModal = () => {
     setDialogOpen(false);
   };
 
-  const hadleDeleteMultipleImages = (imageId: string) => {
-    setImagesBulkDeletId((oldValue) => [...oldValue, imageId]);
+  const hadleDeleteMultipleImages = () => {
+    const ids = [...imageIdsToDelete];
+
+    const newPreviewArr: previewImage[] = [];
+
+    const newFileArr: CustomFile[] = [];
+
+    previewImages.map((preview) => {
+      if (!ids.includes(preview.id)) {
+        newPreviewArr.push(preview);
+      }
+    });
+
+    imageFiles.map((image) => {
+      if (!ids.includes(image.id)) {
+        newFileArr.push(image);
+      }
+    });
+    setPreviewImages(newPreviewArr);
+    setImageFiles(newFileArr);
+    setImagesIdToDelete([]);
+    toast.success(`Imagens deletadas com sucesso.`);
+    setIsDeletingImages((oldValue) => !oldValue);
+    setDesabled((oldValue) => !oldValue);
   };
 
   const setDeleteMultipleImages = () => {
@@ -299,6 +352,16 @@ function ImagesForm() {
 
     setIsDeletingImages((oldValue) => !oldValue);
     setDesabled((oldValue) => !oldValue);
+    handleAddAllImagesToDelete();
+  };
+
+  const setIsDelentingImages = () => {
+    if (previewImages.length && imageFiles.length < 0) return;
+
+    setIsDeletingImages((oldValue) => !oldValue);
+    setDesabled((oldValue) => !oldValue);
+
+    setImagesIdToDelete([]);
   };
 
   const handleCurrentView = (view: string) => {
@@ -311,17 +374,29 @@ function ImagesForm() {
     else return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  const handleDialogOpen = () => {
-    setDialogOpen((oldValue: boolean) => !oldValue);
-    document.body.style.pointerEvents = "auto";
-  };
-
   const handleSetCurrentImage = (currentImage: previewImage) => {
     setCurrentImage(currentImage);
   };
   const handleCleanCurrentImage = () => {
     setCurrentImage(null);
     setDialogOpen(false);
+  };
+  const handleAddImageToDelete = (id: string) => {
+    const found = imageIdsToDelete.find((imageId) => imageId === id);
+
+    if (found) {
+      const removeImageIdFromArray = imageIdsToDelete.filter(
+        (imageId) => imageId !== id
+      );
+      if (removeImageIdFromArray) setImagesIdToDelete(removeImageIdFromArray);
+    } else {
+      setImagesIdToDelete((oldValue) => [...oldValue, id]);
+    }
+  };
+
+  const handleAddAllImagesToDelete = () => {
+    const ids = previewImages.map((image) => image.id);
+    setImagesIdToDelete(ids);
   };
 
   useEffect(() => {
@@ -336,7 +411,7 @@ function ImagesForm() {
   return (
     <div>
       <div className="w-full gap-y-4 py-2 ">
-        <div className="flex items-center justify-between border rounded-md flex-row-reverse ">
+        <div className="flex items-center justify-between border rounded-md  ">
           <Menubar className=" shadow-none border-none">
             <MenubarMenu>
               <MenubarTrigger className="">
@@ -353,64 +428,9 @@ function ImagesForm() {
               </MenubarTrigger>
               <MenubarContent>
                 <MenubarItem onClick={() => inputImageRef.current?.click()}>
-                  Adicionar foto <MenubarShortcut>⌘O</MenubarShortcut>
-                </MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-
-            <MenubarMenu>
-              <MenubarTrigger>Editar</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem>
-                  Deletar fotos <MenubarShortcut>⌘⌫</MenubarShortcut>
-                </MenubarItem>
-                <MenubarItem>
-                  Deletar todas as fotos <MenubarShortcut>⇧⌘⌫</MenubarShortcut>
-                </MenubarItem>
-                <MenubarSeparator />
-                <MenubarItem>
-                  Rotacionar <MenubarShortcut>⌘R</MenubarShortcut>
-                </MenubarItem>
-                <MenubarItem>
-                  Recortar <MenubarShortcut>⌘C</MenubarShortcut>
-                </MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-
-            <MenubarMenu>
-              <MenubarTrigger>Visualização</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem
-                  onClick={() => {
-                    handleCurrentView("slide");
-                  }}
-                >
-                  Slide{" "}
+                  Adicionar foto{" "}
                   <MenubarShortcut>
-                    {" "}
-                    <GalleryHorizontalEnd className="h-4 w-4" />
-                  </MenubarShortcut>
-                </MenubarItem>
-                <MenubarItem
-                  onClick={() => {
-                    handleCurrentView("list");
-                  }}
-                >
-                  Lista{" "}
-                  <MenubarShortcut>
-                    {" "}
-                    <LayoutList className="h-4 w-4" />
-                  </MenubarShortcut>
-                </MenubarItem>
-                <MenubarItem
-                  onClick={() => {
-                    handleCurrentView("dnd-grid");
-                  }}
-                >
-                  Grid{" "}
-                  <MenubarShortcut>
-                    {" "}
-                    <Grid className="h-4 w-4" />
+                    <Upload />
                   </MenubarShortcut>
                 </MenubarItem>
               </MenubarContent>
@@ -446,11 +466,6 @@ function ImagesForm() {
                 <LayoutList className="h-4 w-4" />
               </ToggleGroupItem>
             </ToggleGroup>
-            {isDragging ? (
-              <Button variant={"destructive"} size={"icon"}>
-                <Trash />
-              </Button>
-            ) : null}
           </div>
         </div>
 
@@ -459,7 +474,19 @@ function ImagesForm() {
             <NoImageSelected />
           ) : (
             <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-              <div className="grid grid-cols-4 my-1 gap-5 ">
+              <div className="grid grid-cols-5 my-1 gap-5 ">
+                <DroppableCustom
+                  id={"deleting"}
+                  custom={
+                    "col-span-1 row-span-1 w-full  h-full  p-2 flex items-center justify-center border-dashed border bg-muted"
+                  }
+                >
+                  <div className="col-span-1 row-span-3 bg-amber-500 flex items-center justify-center">
+                    <div className="w-full  h-full  p-2 flex items-center justify-center border-dashed border bg-muted">
+                      <Trash className="h-4 w-4 bg-muted" />{" "}
+                    </div>
+                  </div>
+                </DroppableCustom>
                 {previewImages.map((image, index) => {
                   return (
                     <div
@@ -472,80 +499,101 @@ function ImagesForm() {
                       key={index}
                     >
                       <Droppable id={image.id} key={image.id}>
-                        <div className="w-full  flex items-center justify-center relative ">
-                          {isDragging ? null : (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                asChild
-                                className="absolute right-0 top-0 m-4"
+                        {isDragging ? null : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              asChild
+                              className="absolute right-0 top-0 m-4 z-50"
+                            >
+                              <Button
+                                size={"icon"}
+                                variant={"secondary"}
+                                className="p-3 w-5 h-5 "
                               >
-                                <Button
-                                  size={"icon"}
-                                  variant={"secondary"}
-                                  className="p-3 w-5 h-5"
-                                >
-                                  <MenuIcon />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="text-xs">
-                                {index === 0 ? null : (
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setImageToFirst(image);
-                                    }}
-                                  >
-                                    Nova foto de capa
-                                    <DropdownMenuShortcut>
-                                      <Star />
-                                    </DropdownMenuShortcut>
-                                  </DropdownMenuItem>
-                                )}
-
+                                <MenuIcon />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="text-xs">
+                              {index === 0 ? null : (
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    handleSetCurrentImage(image);
+                                    setImageToFirst(image);
                                   }}
                                 >
-                                  Ver imagem
+                                  Nova foto de capa
                                   <DropdownMenuShortcut>
-                                    <ImageIcon />
+                                    <Star />
                                   </DropdownMenuShortcut>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem variant="destructive">
-                                  Deletar imagem
-                                  <DropdownMenuShortcut>
-                                    <Trash />
-                                  </DropdownMenuShortcut>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                          <Draggable id={image.id} isDisabled={isDisabled}>
-                            <Badge
-                              className="absolute m-4 text-xs"
-                              variant={"secondary"}
-                            >
-                              {index === 0 ? "Imagem principal" : index + 1}
-                            </Badge>
+                              )}
 
-                            <Image
-                              src={image.image}
-                              alt="image from form "
-                              width={900}
-                              height={900}
-                              className={
-                                index === 0
-                                  ? "w-full rounded-md h-full object-cover aspect-square "
-                                  : "w-full h-full rounded-md object-cover aspect-square"
-                              }
-                            />
-                          </Draggable>
-                        </div>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  handleSetCurrentImage(image);
+                                }}
+                              >
+                                Ver imagem
+                                <DropdownMenuShortcut>
+                                  <ImageIcon />
+                                </DropdownMenuShortcut>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem variant="destructive">
+                                Deletar imagem
+                                <DropdownMenuShortcut>
+                                  <Trash />
+                                </DropdownMenuShortcut>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                        <Draggable id={image.id} isDisabled={isDisabled}>
+                          <Badge
+                            className="absolute m-4 text-xs"
+                            variant={"secondary"}
+                          >
+                            {index === 0 ? "Imagem principal" : index + 1}
+                          </Badge>
+
+                          <Image
+                            src={image.image}
+                            alt="image from form "
+                            width={900}
+                            height={900}
+                            className={
+                              index === 0
+                                ? "w-full rounded-md h-full object-cover aspect-square transition-all"
+                                : "w-full h-full rounded-md object-cover aspect-square transition-all"
+                            }
+                          />
+                        </Draggable>
                       </Droppable>
                     </div>
                   );
                 })}
               </div>
+              <DragOverlay
+                modifiers={[restrictToWindowEdges]}
+                adjustScale
+                style={{
+                  transition:
+                    "transform 50ms cubic-bezier(0.2, 0, 0.2, 1),    50ms linear",
+                  border: "rounded",
+                }}
+                dropAnimation={{
+                  duration: 200,
+                  easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                }}
+              >
+                {activeId ? (
+                  <Image
+                    src={activeId}
+                    alt="image from form"
+                    width={900}
+                    height={900}
+                    className="w-full rounded-md h-full object-cover aspect-square transition-all"
+                  />
+                ) : null}
+              </DragOverlay>
             </DndContext>
           )
         ) : null}
@@ -554,165 +602,152 @@ function ImagesForm() {
       {interfaceView === "slide" ? (
         <Thumbs images={previewImages} handleCloseModal={handleCloseModal} />
       ) : null}
-      {interfaceView === "list" ? (
-        previewImages.length === 0 ? (
-          <NoImageSelected />
-        ) : (
-          <div className="grid w-full [&>div]:max-h-[300px] [&>div]:border [&>div]:rounded">
-            <Table className="overflow-x-hidden">
-              <TableHeader className="overflow-x-hidden">
-                <TableRow className="[&>*]:whitespace-nowrap sticky top-0 bg-background after:content-[''] after:inset-x-0 after:h-px after:bg-border after:absolute after:bottom-0 ">
-                  <TableHead className="w-[100px] ">Visualização</TableHead>
-                  <TableHead className="w-[100px]  text-start">
-                    Tamanho
-                  </TableHead>
-                  <TableHead className="w-[100px]  text-start">Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="right-0 text-right"> </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="overflow-hidden">
-                {previewImages.map((image, index) => {
-                  return (
-                    <TableRow
-                      key={index}
-                      className="odd:bg-muted/50 [&>*]:whitespace-nowrap"
-                    >
-                      <TableCell className="flex items-center justify-center">
-                        <Image
-                          src={image.image}
-                          className="aspect-auto object-cover"
-                          width={70}
-                          height={10}
-                          alt="image from image list form"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {formatFileSize(parseInt(image.size))}{" "}
-                      </TableCell>
-                      <TableCell className="font-medium  w-[100px] ">
-                        {image.file_name}
-                      </TableCell>
-                      <TableCell>{image.type}</TableCell>
-                      <TableCell className="right-0 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size={"icon"} variant={"secondary"}>
-                              <MenuIcon />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem>Billing</DropdownMenuItem>
-                            <DropdownMenuItem>Team</DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setCurrentImage(image);
-                              }}
-                            >
-                              Ver imagem
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => {
-                                deleteImage(image);
-                              }}
-                            >
-                              Deletar imagem
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )
-      ) : null}
+
       {interfaceView === "list" ? (
         previewImages.length === 0 ? (
           <NoImageSelected />
         ) : (
           <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-            <div className="grid w-full [&>div]:max-h-[300px] [&>div]:border [&>div]:rounded">
-              <Table className="overflow-x-hidden">
-                <TableHeader className="overflow-x-hidden">
-                  <TableRow className="[&>*]:whitespace-nowrap sticky top-0 bg-background after:content-[''] after:inset-x-0 after:h-px after:bg-border after:absolute after:bottom-0 ">
-                    <TableHead className="w-[100px] ">Visualização</TableHead>
-                    <TableHead className="w-[100px]  text-start">
-                      Tamanho
+            <SortableContext
+              items={previewImages.map((img) => img.id)}
+              disabled={isDeletingImages}
+            >
+              <Table className="overflow-hidden">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Visualização</TableHead>
+                    <TableHead className="w-[70px]">Tamanho</TableHead>
+                    <TableHead className="w-[90px]">Tipo</TableHead>
+                    <TableHead className="w-[90px]">Nome</TableHead>
+                    <TableHead className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Menubar className=" shadow-none border-none">
+                          <MenubarMenu>
+                            <MenubarTrigger className="">Editar</MenubarTrigger>
+
+                            <MenubarContent>
+                              <MenubarLabel className="text-xs text-red-400">
+                                Imagens
+                              </MenubarLabel>
+                              <MenubarSeparator />
+                              {isDeletingImages ? null : (
+                                <MenubarItem onClick={setDeleteMultipleImages}>
+                                  Selecionar todas
+                                  <MenubarShortcut>
+                                    <List />
+                                  </MenubarShortcut>
+                                </MenubarItem>
+                              )}
+                              <MenubarItem onClick={setIsDelentingImages}>
+                                {isDeletingImages ? (
+                                  "Cancelar"
+                                ) : (
+                                  <>
+                                    {" "}
+                                    Selecionar imagens
+                                    <MenubarShortcut>
+                                      <ImageIcon />
+                                    </MenubarShortcut>
+                                  </>
+                                )}
+                              </MenubarItem>
+                            </MenubarContent>
+                          </MenubarMenu>
+                        </Menubar>
+
+                        {isDeletingImages ? (
+                          <div>
+                            <Button
+                              variant={"destructive"}
+                              size={"sm"}
+                              onClick={hadleDeleteMultipleImages}
+                            >
+                              <Trash />
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
                     </TableHead>
-                    <TableHead className="w-[100px]  text-start">
-                      Nome
-                    </TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="right-0 text-right"> </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="overflow-hidden">
-                  {previewImages.map((image, index) => {
-                    return (
-                      <Droppable key={index} id={image.id}>
-                        <div className="bg-red-400">
-                          <Draggable id={image.id}>
-                            <TableRow
-                              key={index}
-                              className="odd:bg-muted/50 [&>*]:whitespace-nowrap bg-amber-400"
-                            >
-                              <TableCell className="flex items-center justify-center">
-                                <Image
-                                  src={image.image}
-                                  className="aspect-auto object-cover"
-                                  width={70}
-                                  height={10}
-                                  alt="image from image list form"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                {formatFileSize(parseInt(image.size))}{" "}
-                              </TableCell>
-                              <TableCell className="font-medium  w-[100px] ">
-                                {image.file_name}
-                              </TableCell>
-                              <TableCell>{image.type}</TableCell>
-                              <TableCell className="right-0 text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button size={"icon"} variant={"secondary"}>
-                                      <MenuIcon />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem>Billing</DropdownMenuItem>
-                                    <DropdownMenuItem>Team</DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setCurrentImage(image);
-                                      }}
-                                    >
-                                      Ver imagem
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      variant="destructive"
-                                      onClick={() => {
-                                        deleteImage(image);
-                                      }}
-                                    >
-                                      Deletar imagem
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          </Draggable>
-                        </div>
-                      </Droppable>
-                    );
-                  })}
+                <TableBody>
+                  {previewImages.map((image, index) => (
+                    <SortableTableRow key={image.id} id={image.id}>
+                      <TableCell className="relative">
+                        <Image
+                          src={image.image}
+                          width={70}
+                          height={30}
+                          alt="Preview"
+                          className="aspect-square object-cover"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {formatFileSize(parseInt(image.size))}
+                      </TableCell>
+                      <TableCell>{image.type}</TableCell>
+                      <TableCell className="max-w-20  ">
+                        {image.file_name.slice(0, 20)}...
+                      </TableCell>
+                      <TableCell className="text-right flex items-center justify-end ">
+                        {isDeletingImages ? (
+                          <div className="  w-fit text-right  flex items-center justify-end p-3">
+                            <Checkbox
+                              checked={imageIdsToDelete.includes(image.id)}
+                              className=""
+                              onClick={() => {
+                                handleAddImageToDelete(image.id);
+                              }}
+                            />
+                          </div>
+                        ) : null}
+                      </TableCell>
+                    </SortableTableRow>
+                  ))}
                 </TableBody>
               </Table>
-            </div>
+            </SortableContext>
+            <DragOverlay
+              modifiers={[restrictToWindowEdges]}
+              adjustScale
+              style={{
+                transition:
+                  "transform 50ms cubic-bezier(0.2, 0, 0.2, 1),    50ms linear",
+                border: "rounded",
+              }}
+              dropAnimation={{
+                duration: 200,
+                easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+              }}
+            >
+              {activeId ? (
+                <table className="">
+                  <tbody className="">
+                    <SortableTableRow id={activeId}>
+                      <TableCell className="relative">
+                        <Image
+                          src={activeId}
+                          width={70}
+                          height={30}
+                          alt="Preview"
+                          className="aspect-square object-cover"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        {formatFileSize(currentImageFile?.size)}
+                      </TableCell>
+                      <TableCell>{currentImageFile?.type}</TableCell>
+                      <TableCell className="max-w-20  ">
+                        {currentImageFile?.name}
+                      </TableCell>
+
+                      <TableCell className="text-right"></TableCell>
+                    </SortableTableRow>
+                  </tbody>
+                </table>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         )
       ) : null}
