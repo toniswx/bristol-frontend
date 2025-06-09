@@ -11,7 +11,7 @@ export function DroppableCustom(props) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={props.custom}>
+    <div ref={setNodeRef} style={style} className={"h-full  bg-red-500"}>
       {props.children}
     </div>
   );
