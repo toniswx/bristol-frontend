@@ -2,6 +2,7 @@ import { CustomFile, previewImage } from "@/components/post-form/images";
 import { create } from "zustand";
 
 export type newPostForm = {
+  coordenates: string;
   title?: string;
   textDescription?: string;
   log?: string;
@@ -31,13 +32,14 @@ export type formState = {
 
 export const useFormState = create<formState>()((set) => ({
   form: {
+    coordenates: "",
     title: "Condomínio Maison Rochelle",
     textDescription:
       "Nossa Senhora das Graças - Vieiralves. Vendo lindo apartamento localizado na área mais nobre de Manaus. Condomínio Maison Rochelle, contendo 80m² distribuídos em 3 quartos sendo 1 suíte, sala de jantar e estar com varanda, cozinha americana, completo de armários planejados de excelente qualidade e conservadíssimo, climatizado, com 01 vaga de garagem coberta, 100% reformado e totalmente documentado. Com portaria Digital e reconhecimento facial.",
     street: "TESTE",
     city: "TESTE",
     estate: "TESTE",
-    CEP: "12345678",
+    CEP: "",
     price: "100000",
     log: "TESTE",
     IPTU: "2000",
@@ -49,7 +51,7 @@ export const useFormState = create<formState>()((set) => ({
     photoURLPREVIEW: [],
     photoFiles: [],
   },
-  formStep: 3,
+  formStep: 1,
   setFormStep: () => {
     const nextStep = useFormState.getState().formStep + 1;
     set({ formStep: nextStep });

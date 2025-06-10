@@ -1,4 +1,24 @@
 "use client";
+import dynamic from "next/dynamic";
+
+// Dynamically import the map components with SSR disabled
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+
+const Circle = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Circle),
+  { ssr: false }
+);
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,6 +40,9 @@ import { useFormState } from "@/lib/stores/formStore";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useGoBackOneFormStep } from "@/hooks/use-handle-go-back";
 
+import { URLSearchParams } from "url";
+import { json } from "stream/consumers";
+
 const formSchema = z.object({
   log: z.string().min(5, {
     message: "O logradouro precisa ter no mínimo 5 caracteres",
@@ -38,6 +61,7 @@ const formSchema = z.object({
     // Assuming format "XXXXX-XXX"
     message: "CEP deve ter 8 dígitos no formato XXXXX-XXX",
   }),
+  coordenates: z.any(),
 });
 
 function LocationForm() {
@@ -53,6 +77,7 @@ function LocationForm() {
       city: formState.form.city || "",
       estate: formState.form.estate || "",
       CEP: formState.form.CEP || "",
+      coordenates: formState.form.coordenates || undefined,
     },
   });
 
@@ -60,9 +85,35 @@ function LocationForm() {
     formState.setFormData(values);
     formState.setFormStep();
   }
+  const fetchCoordinates = async (address: string) => {
+    try {
+      const encodedQuery = encodeURIComponent(address);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json`
+      );
+
+      const data = await response.json();
+      if (data.length > 0) {
+        return data;
+      }
+    } catch (error) {
+      console.error("Geocoding failed:", error);
+    }
+  };
+
+  const cepApi = (cep: string) => {};
 
   const getUserAdress = async (cep: string) => {
     setCepLoad(true);
+    form.setValue("coordenates", undefined);
+
+    const len = cep.length;
+
+    const n = cep.split("");
+    n[len - 1] = "0";
+    let u = "";
+    n.map((i) => (u = u + i));
+
     try {
       const adress = await fetch(`http://viacep.com.br/ws/${cep}/json/`, {
         method: "GET",
@@ -70,7 +121,11 @@ function LocationForm() {
 
       const data = await adress.json();
 
-      setCepLoad(false);
+      if (!data) return;
+
+      const coordanates = await fetchCoordinates(
+        `${data.localidade}, ${data.bairro}, ${data.logradouro}`
+      );
 
       if (data.erro === "true") {
         form.setError("CEP", { message: "CEP não encontrado ou inválido." });
@@ -78,12 +133,16 @@ function LocationForm() {
         form.setValue("street", "");
         form.setValue("estate", "");
         form.setValue("log", "");
+        setCepLoad(false);
       } else {
         form.clearErrors("CEP");
         form.setValue("city", data.localidade);
         form.setValue("street", data.bairro);
         form.setValue("estate", data.estado);
         form.setValue("log", data.logradouro);
+        if (coordanates !== undefined)
+          form.setValue("coordenates", coordanates[0]);
+        setCepLoad(false);
       }
     } catch (err) {
       console.error(err);
@@ -110,7 +169,6 @@ function LocationForm() {
     if (x.length === 8) {
       getUserAdress(x);
     }
-
     handleInputChange(cepRef);
   }, [x]);
 
@@ -120,6 +178,33 @@ function LocationForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className=" space-y-5 ">
+            {form.getValues().coordenates !== undefined ? (
+              <MapContainer
+                center={[
+                  form.getValues().coordenates.lat.toString(),
+                  form.getValues().coordenates.lon.toString(),
+                ]}
+                zoom={14}
+                scrollWheelZoom={false}
+                style={{ height: "250px" }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Circle
+                  center={[
+                    form.getValues().coordenates.lat.toString(),
+                    form.getValues().coordenates.lon.toString(),
+                  ]}
+                  pathOptions={{ fillColor: "blue" }}
+                  radius={500}
+                  stroke={false}
+                />
+              </MapContainer>
+            ) : (
+              ""
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -205,6 +290,7 @@ function LocationForm() {
               />
             </div>
           </div>
+
           <div className="flex items-center justify-between">
             <Button
               type="button"
@@ -225,3 +311,12 @@ function LocationForm() {
 }
 
 export default LocationForm;
+
+function MapPlaceholder() {
+  return (
+    <p>
+      Nenhuma visualização disponível.
+      <noscript>You need to enable JavaScript to see this map.</noscript>
+    </p>
+  );
+}
