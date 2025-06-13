@@ -45,6 +45,19 @@ const formSchema = z.object({
 });
 
 function DetailForm() {
+  const formatCurrency = (value: string) => {
+    const numberStr = value.replace(/[^\d,]/g, "").replace(",", ".");
+
+    if (value === "") return;
+    const number = parseFloat(numberStr);
+
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(number);
+  };
   const priceRef = useRef<HTMLInputElement>(null);
   const iptuRef = useRef<HTMLInputElement>(null);
 
@@ -88,29 +101,20 @@ function DetailForm() {
     return value.replace(/\D/g, "");
   };
   function onSubmit(values: z.infer<typeof formSchema>) {
-    formState.setFormData(values);
+    const valueClean = formatInputToNumber(values.price);
+    const iptuClean = formatInputToNumber(values.IPTU);
+    formState.setFormData({ ...values, price: valueClean, IPTU: iptuClean });
     formState.setFormStep();
   }
-
-  const formatCurrency = (value: string) => {
-    const numberStr = value.replace(/[^\d,]/g, "").replace(",", ".");
-
-    if (value === "") return;
-    const number = parseFloat(numberStr);
-
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(number);
-  };
 
   useEffect(() => {
     form.setValue("garage", formState.form.garage!);
     form.setValue("bathrooms", formState.form.bathrooms!);
     form.setValue("bedrooms", formState.form.bedrooms!);
+    form.setValue("price", formatCurrency(formState.form.price));
+    form.setValue("IPTU", formatCurrency(formState.form.IPTU));
   }, [formState.form]);
+
   const handleGoBack = () => formState.setGoBackOneStep();
 
   return (

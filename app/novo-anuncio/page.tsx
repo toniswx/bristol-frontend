@@ -87,12 +87,10 @@ function Page() {
   const x = (currentStep / totalLength) * 100;
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-start flex-col">
-      <Progress value={x} />{" "}
-      <div className="w-full flex items-start justify-start  p-30 py-2  ">
-        <div className="w-96 h-full space-y-2 p-4 "></div>
-        <div className="w-1/2 flex justify-center items-center flex-col   p-4 ">
-          <div className="w-full mb-2 space-y-1 ">
+    <div className="w-full min-h-screen flex items-center justify-start flex-col ">
+      <div className="w-full flex items-start justify-centers   py-2  ">
+        <div className=" flex justify-center items-center flex-col  w-full  p-4 ">
+          <div className="w-10/12 mb-2 space-y-1 ">
             <div className="flex items-center justify-start space-x-2">
               <h1 className="scroll-m-20 text-center text-2xl font-extrabold tracking-tight text-balance">
                 {f()[formState.formStep].title}{" "}
@@ -104,7 +102,7 @@ function Page() {
             </p>
           </div>
 
-          <div className="w-full mt-1">
+          <div className="w-10/12 mt-1  ">
             <DndContext>{f()[formState.formStep].form}</DndContext>
           </div>
         </div>

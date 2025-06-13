@@ -42,6 +42,7 @@ import { useGoBackOneFormStep } from "@/hooks/use-handle-go-back";
 
 import { URLSearchParams } from "url";
 import { json } from "stream/consumers";
+import { geoAPI } from "@/types";
 
 const formSchema = z.object({
   log: z.string().min(5, {
@@ -61,7 +62,6 @@ const formSchema = z.object({
     // Assuming format "XXXXX-XXX"
     message: "CEP deve ter 8 dígitos no formato XXXXX-XXX",
   }),
-  coordenates: z.any(),
 });
 
 function LocationForm() {
@@ -77,7 +77,6 @@ function LocationForm() {
       city: formState.form.city || "",
       estate: formState.form.estate || "",
       CEP: formState.form.CEP || "",
-      coordenates: formState.form.coordenates || undefined,
     },
   });
 
@@ -85,35 +84,25 @@ function LocationForm() {
     formState.setFormData(values);
     formState.setFormStep();
   }
-  const fetchCoordinates = async (address: string) => {
+  const fetchCoordinates = async (
+    address: string
+  ): Promise<geoAPI[] | undefined> => {
     try {
       const encodedQuery = encodeURIComponent(address);
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json`
       );
 
-      const data = await response.json();
+      const data: geoAPI[] = await response.json();
       if (data.length > 0) {
         return data;
       }
     } catch (error) {
-      console.error("Geocoding failed:", error);
+      if (error) return undefined;
     }
   };
 
-  const cepApi = (cep: string) => {};
-
-  const getUserAdress = async (cep: string) => {
-    setCepLoad(true);
-    form.setValue("coordenates", undefined);
-
-    const len = cep.length;
-
-    const n = cep.split("");
-    n[len - 1] = "0";
-    let u = "";
-    n.map((i) => (u = u + i));
-
+  const cepApi = async (cep: string) => {
     try {
       const adress = await fetch(`http://viacep.com.br/ws/${cep}/json/`, {
         method: "GET",
@@ -123,29 +112,59 @@ function LocationForm() {
 
       if (!data) return;
 
-      const coordanates = await fetchCoordinates(
-        `${data.localidade}, ${data.bairro}, ${data.logradouro}`
-      );
-
-      if (data.erro === "true") {
-        form.setError("CEP", { message: "CEP não encontrado ou inválido." });
-        form.setValue("city", "");
-        form.setValue("street", "");
-        form.setValue("estate", "");
-        form.setValue("log", "");
-        setCepLoad(false);
-      } else {
-        form.clearErrors("CEP");
-        form.setValue("city", data.localidade);
-        form.setValue("street", data.bairro);
-        form.setValue("estate", data.estado);
-        form.setValue("log", data.logradouro);
-        if (coordanates !== undefined)
-          form.setValue("coordenates", coordanates[0]);
-        setCepLoad(false);
-      }
+      return data;
     } catch (err) {
-      console.error(err);
+      throw err;
+    }
+  };
+
+  const getUserAdress = async (cep: string) => {
+    /// nomatin api does not work properly with
+    /// viacep api address data
+    /// changing the last charachter to a 0 makes
+    /// viacep api get a more general adress name
+    /// thus make the nomatin api finding a street name
+    /// more easy
+
+    setCepLoad(true);
+    formState.setFormData({
+      geoCords: undefined,
+    });
+    //changes the last character to a 0
+    const len = cep.length;
+    const n = cep.split("");
+    n[len - 1] = "0";
+    let u = "";
+    n.map((i) => (u = u + i));
+
+    const data = await cepApi(cep);
+    const mapData = await cepApi(u);
+
+    const coordanates = await fetchCoordinates(
+      `${mapData.localidade}, ${mapData.bairro}, ${mapData.logradouro}`
+    );
+    if (coordanates === undefined) return;
+    formState.setFormData({
+      geoCords: {
+        lat: coordanates[0].lat,
+        long: coordanates[0].lon,
+      },
+    });
+
+    if (data.erro === "true") {
+      form.setError("CEP", { message: "CEP não encontrado ou inválido." });
+      form.setValue("city", "");
+      form.setValue("street", "");
+      form.setValue("estate", "");
+      form.setValue("log", "");
+      setCepLoad(false);
+    } else {
+      form.clearErrors("CEP");
+      form.setValue("city", data.localidade);
+      form.setValue("street", data.bairro);
+      form.setValue("estate", data.estado);
+      form.setValue("log", data.logradouro);
+
       setCepLoad(false);
     }
   };
@@ -178,32 +197,51 @@ function LocationForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className=" space-y-5 ">
-            {form.getValues().coordenates !== undefined ? (
-              <MapContainer
-                center={[
-                  form.getValues().coordenates.lat.toString(),
-                  form.getValues().coordenates.lon.toString(),
-                ]}
-                zoom={14}
-                scrollWheelZoom={false}
-                style={{ height: "250px" }}
+            {formState.form.geoCords !== undefined ? (
+              <div
+                className=""
+                style={{
+                  height: "250px",
+                }}
               >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Circle
+                <MapContainer
                   center={[
-                    form.getValues().coordenates.lat.toString(),
-                    form.getValues().coordenates.lon.toString(),
+                    formState.form.geoCords.lat.toString(),
+                    formState.form.geoCords.long.toString(),
                   ]}
-                  pathOptions={{ fillColor: "blue" }}
-                  radius={500}
-                  stroke={false}
-                />
-              </MapContainer>
+                  zoom={14}
+                  scrollWheelZoom={false}
+                  style={{ height: "250px" }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Circle
+                    center={[
+                      formState.form.geoCords.lat,
+                      formState.form.geoCords.long,
+                    ]}
+                    pathOptions={{ fillColor: "blue" }}
+                    radius={270}
+                    stroke={false}
+                  />
+                </MapContainer>
+              </div>
             ) : (
-              ""
+              <div
+                className="map-placeholder"
+                style={{
+                  height: "250px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#f0f0f0",
+                  color: "#666",
+                }}
+              >
+                <p>Nenhuma visualização disponível.</p>
+              </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField

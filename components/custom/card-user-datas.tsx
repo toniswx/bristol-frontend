@@ -22,10 +22,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, CardPrimitiveProps>(
     return (
       <div
         ref={ref}
-        className={cn(
-          "items-start justify-between flex w-full mx-3",
-          className
-        )}
+        className={cn("items-start justify-between flex w-full ", className)}
       >
         {children}
       </div>
