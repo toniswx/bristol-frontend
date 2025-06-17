@@ -11,7 +11,7 @@ export default function AuthWrapper({
   return <>{children}</>;
 }
 
-export const getUserData = async (): Promise<User | undefined> => {
+export const getUserData = async (): Promise<User | null> => {
   try {
     const post = await fetch("http://localhost:5000/auth", {
       method: "GET",
@@ -21,11 +21,11 @@ export const getUserData = async (): Promise<User | undefined> => {
       },
     });
 
-    if (!post) return;
+    if (!post.ok) return null;
     const data: User = await post.json();
 
     return data;
   } catch (err) {
-    console.error(err);
+    return null
   }
 };

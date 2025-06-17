@@ -5,25 +5,25 @@ import React from "react";
 function page() {
   return (
     <div className="h-screen w-full z-80 bg-white absolute top-0   flex items-center justify-center flex-col gap-10 ">
-      <div className="w-1/3 gap-y-5 h-full flex items-start justify-center flex-col ">
+      <div className="w-1/3  gap-y-5 h-full flex items-start justify-center flex-col ">
         <div className=" flex justify-start items-start ">
-          <div className="space-y-3">
+          <div className="space-y-1">
             <TextAnimate
               animation="fadeIn"
               by="line"
               as="p"
-              className="text-5xl font-bold"
+              className="text-4xl font-bold"
             >
               Crie sua conta
             </TextAnimate>
             <TextAnimate
-              className="text-lg font-semibold text-muted-foreground"
+              className="text-sm font-semibold text-muted-foreground"
               animation="fadeIn"
               by="line"
               as="p"
               delay={0.2}
             >
-              Preencha os campos e pronto!
+              Preencha os campos para começar a anunciar de graça !
             </TextAnimate>
           </div>
         </div>

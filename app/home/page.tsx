@@ -4,11 +4,21 @@ import LocationFilter from "@/components/custom/estate-filter2";
 import Filter from "@/components/custom/Filter";
 import React from "react";
 import PreviewCard from "@/components/custom/preview-card";
+import { CookieConsent } from "@/components/cookie-consent";
 
 function Page() {
   return (
     <div className="w-full flex items-center justify-center">
       <div className=" flex items-start justify-center  p-6 h-full  w-4/6">
+       <CookieConsent
+      variant="minimal"
+      onAcceptCallback={() => {
+        // Handle accept
+      }}
+      onDeclineCallback={() => {
+        // Handle decline
+      }}
+    />
         <div className="w-2/6 ">
           <Filter />
         </div>

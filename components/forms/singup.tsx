@@ -17,21 +17,30 @@ import {
 import { Input } from "@/components/ui/input";
 import FullPageLoad from "../custom/full-page-load";
 import { useRouter } from "next/navigation";
+import { AlertCircleIcon, ImageUpIcon, XIcon } from "lucide-react"
+
+import { useFileUpload } from "@/hooks/use-file-upload"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email" }),
   password: z
     .string()
-    .min(5, { message: "Password needs to be at least 5 characters long." }),
+    .min(5, { message: "Senhas precisam ter pelomenos 5 caracteres." }),
   confirmPassword: z.string(),
-  firstName: z.string().min(1, { message: "First name can't be empty." }),
-  lastName: z.string().min(1, { message: "Last name can't be empty." }),
+  firstName: z.string().min(1, { message: "Nome não pode ficar vazio." }),
+  lastName: z.string().min(1, { message: "Sobrenome não pode ficar vazio." }),
   estate: z.string(),
   city: z.string(),
   street: z.string(),
   cep: z.string().min(8, {}),
 });
 function SingupMulti() {
+
+ 
+  const maxSizeMB = 5
+  const maxSize = maxSizeMB * 1024 * 1024 // 5MB default
+
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,10 +57,26 @@ function SingupMulti() {
   });
 
   const router = useRouter();
+  const [
+    { files, isDragging, errors },
+    {
+      handleDragEnter,
+      handleDragLeave,
+      handleDragOver,
+      handleDrop,
+      openFileDialog,
+      removeFile,
+      getInputProps,
+    },
+  ] = useFileUpload({
+    accept: "image/*",
+    maxSize,
+  })
   const [isLoading, setLoading] = useState<boolean>(false);
   const [cepLoad, setCepLoad] = useState<boolean>(false);
-
+  const previewUrl = files[0]?.preview || null
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    
     if (values.confirmPassword !== values.password) {
       form.setError("confirmPassword", {
         type: "manual",
@@ -123,6 +148,17 @@ function SingupMulti() {
     }
   }, [x]);
 
+
+
+
+
+
+
+
+
+
+
+
   return (
     <div className="w-full flex items-center justify-center">
       {isLoading ? (
@@ -130,14 +166,16 @@ function SingupMulti() {
       ) : (
         <div className=" w-full space-y-7">
           <Form {...form}>
-            <h2 className=" text-muted-foreground font-semibold">
-              Dados de login
-            </h2>
+           
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-5 w-full"
             >
-              <FormField
+             
+              <div className="space-y-2 ">
+                                <h2 className="text-muted-foreground">Login</h2>
+
+                <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
@@ -151,7 +189,6 @@ function SingupMulti() {
                   </FormItem>
                 )}
               />
-              <div className="space-y-2">
                 <FormField
                   control={form.control}
                   name="password"
@@ -181,13 +218,90 @@ function SingupMulti() {
                   )}
                 />
               </div>
-              <div className="space-y-7">
-                <h2 className="text-muted-foreground font-semibold">
-                  {" "}
-                  Informações pessoais
-                </h2>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                  <FormField
+              <div>
+                <h2 className="text-muted-foreground">Informações pessoais</h2>
+                  <div className="flex flex-col gap-2">
+      <div className="relative border border-dashed my-4">
+        {/* Drop area */}
+        <div
+          role="button"
+          onClick={openFileDialog}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          data-dragging={isDragging || undefined}
+          className="border-input hover:bg-accent/50 data-[dragging=true]:bg-accent/50 has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 relative flex min-h-52 flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed p-4 transition-colors has-disabled:pointer-events-none has-disabled:opacity-50 has-[img]:border-none has-[input:focus]:ring-[3px]"
+        >
+          <input
+            {...getInputProps()}
+            className="sr-only"
+            aria-label="Upload file"
+          />
+          {previewUrl ? (
+            <div className="absolute inset-0 h-59 ">
+              <img
+                src={previewUrl}
+                alt={files[0]?.file?.name || "Uploaded image"}
+                className="size-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
+              <div
+                className="bg-background mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border"
+                aria-hidden="true"
+              >
+                <ImageUpIcon className="size-4 opacity-60" />
+              </div>
+              <p className="mb-1.5 text-sm font-medium">
+                Selecione uma imagem sua.
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Tamanho máximo: {maxSizeMB}MB
+              </p>
+            </div>
+          )}
+        </div>
+        {previewUrl && (
+          <div className="absolute top-4 right-4">
+            <button
+              type="button"
+              className="focus-visible:border-ring focus-visible:ring-ring/50 z-50 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-[color,box-shadow] outline-none hover:bg-black/80 focus-visible:ring-[3px]"
+              onClick={() => removeFile(files[0]?.id)}
+              aria-label="Remove image"
+            >
+              <XIcon className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {errors.length > 0 && (
+        <div
+          className="text-destructive flex items-center gap-1 text-xs"
+          role="alert"
+        >
+          <AlertCircleIcon className="size-3 shrink-0" />
+          <span>{errors[0]}</span>
+        </div>
+      )}
+
+      <p
+        aria-live="polite"
+        role="region"
+        className="text-muted-foreground mt-2 text-center text-xs"
+      >
+       
+        <a
+          href="https://github.com/origin-space/originui/tree/main/docs/use-file-upload.md"
+          className="hover:text-foreground underline"
+        >
+         
+        </a>
+      </p>
+    </div>
+                 <FormField
                     control={form.control}
                     name="firstName"
                     render={({ field }) => (
@@ -212,6 +326,12 @@ function SingupMulti() {
                       </FormItem>
                     )}
                   />
+                
+              </div>
+              <div className="space-y-7">
+              
+                <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                 
                   <FormField
                     control={form.control}
                     name="cep"

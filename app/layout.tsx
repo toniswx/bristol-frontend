@@ -4,6 +4,7 @@ import Navbar from "@/components/custom/navbar";
 import AuthWrapper from "@/components/AuthWrapper";
 import QueryClientProviderWrapper from "@/components/QueryProviderWrapper";
 import { Toaster } from "@/components/ui/sonner";
+import CustomNavBar from "@/components/customized/navbar-custom";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,23 +28,25 @@ export default function RootLayout({
         <Toaster richColors theme={"light"} />
         <QueryClientProviderWrapper>
           <AuthWrapper>
-            <Navbar />
+            <CustomNavBar />
             {children}
           </AuthWrapper>
         </QueryClientProviderWrapper>
-      </body>
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossOrigin=""
-      />
-      <script
+           <script 
         defer
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossOrigin=""
       ></script>
+      </body>
+      <link
+        precedence="default" 
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossOrigin=""
+      />
+   
     </html>
   );
 }
