@@ -1,25 +1,43 @@
-import { Button } from "@/components/ui/button"
+"use client";
+import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-} from "@/components/ui/navigation-menu"
+} from "@/components/ui/navigation-menu";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import Logo from "../custom/logo"
-import { User } from "lucide-react"
+} from "@/components/ui/popover";
+import Logo from "../custom/logo";
+import { User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getUserData } from "../AuthWrapper";
+import { useRouter } from "next/navigation";
+import UserMenu from "../navbar-components/user-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { DialogHeader } from "../ui/dialog";
+import LoginForm from "../forms/login";
 
 // Navigation links array to be used in both desktop and mobile menus
-const navigationLinks = [
-  { href: "#", label: "Home", active: true },
-
-]
+const navigationLinks = [{ href: "#", label: "Home", active: true }];
 
 export default function CustomNavBar() {
+  const query = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+  });
+
+  const route = useRouter();
+
   return (
     <header className="border-b px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
@@ -81,7 +99,21 @@ export default function CustomNavBar() {
           {/* Main nav */}
           <div className="flex items-center gap-6">
             <a href="#" className="text-primary hover:text-primary/90">
-         <svg id="logo-72" width="40" height="44" viewBox="0 0 53 44" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M23.2997 0L52.0461 28.6301V44H38.6311V34.1553L17.7522 13.3607L13.415 13.3607L13.415 44H0L0 0L23.2997 0ZM38.6311 15.2694V0L52.0461 0V15.2694L38.6311 15.2694Z" class="ccustom" fill="#212326"></path> </svg>
+              <svg
+                id="logo-72"
+                width="40"
+                height="44"
+                viewBox="0 0 53 44"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {" "}
+                <path
+                  d="M23.2997 0L52.0461 28.6301V44H38.6311V34.1553L17.7522 13.3607L13.415 13.3607L13.415 44H0L0 0L23.2997 0ZM38.6311 15.2694V0L52.0461 0V15.2694L38.6311 15.2694Z"
+                  className="ccustom"
+                  fill="#212326"
+                ></path>{" "}
+              </svg>
             </a>
             {/* Navigation menu */}
             <NavigationMenu className="max-md:hidden">
@@ -102,15 +134,41 @@ export default function CustomNavBar() {
           </div>
         </div>
         {/* Right side */}
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="text-sm">
-            <a href="/singup">Entrar</a>
-          </Button>
-          <Button asChild size="sm" className="text-sm">
-            <a href="/singup">Criar conta <User /> </a>
-          </Button>
-        </div>
+        {query.data?.id ? (
+          <UserMenu userdata={query?.data} />
+        ) : (
+          <div className="space-x-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="cursor-pointer " variant={"secondary"}>
+                  Entrar
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="lg:w-1/5 rounded-sm">
+                <div className="w-full flex items-center justify-center flex-col ">
+                  <div>
+                    <Logo />
+                  </div>
+                  <DialogHeader className="flex items-center justify-center w-full my-2 ">
+                    <DialogTitle className=" flex items-center justify-center ">
+                      Login{" "}
+                    </DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Insira suas credenciais para acessar sua conta.
+                    </DialogDescription>
+                  </DialogHeader>
+                </div>
+                
+                <LoginForm />
+              
+              </DialogContent>
+            </Dialog>
+            <Button asChild size={"sm"} className="" variant={"default"}>
+              <a href="/singup"> Criar conta</a>
+            </Button>
+          </div>
+        )}
       </div>
     </header>
-  )
+  );
 }

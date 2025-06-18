@@ -4,7 +4,8 @@ import { z } from "zod";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { SwitchIcon } from "@radix-ui/react-icons";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email" }),
@@ -88,7 +90,12 @@ function LoginForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel className="w-full flex  items-center justify-between">
+                  Senha{" "}
+                  <Button variant={"link"} type="button" asChild>
+                    <a href="/password-recovery">Esqueci minha senha</a>
+                  </Button>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="" {...field} type="password" />
                 </FormControl>
@@ -97,6 +104,7 @@ function LoginForm() {
               </FormItem>
             )}
           />
+
           <Button type="submit" className="w-full">
             Login
           </Button>
@@ -109,6 +117,7 @@ function LoginForm() {
       ) : (
         ""
       )}
+
       <Separator className="my-2" />
       <div className="w-full flex items-center justify-center">
         <p className="text-sm ">
