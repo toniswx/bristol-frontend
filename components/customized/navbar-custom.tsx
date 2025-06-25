@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import Logo from "../custom/logo";
-import { User } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getUserData } from "../AuthWrapper";
 import { useRouter } from "next/navigation";
@@ -41,7 +41,7 @@ export default function CustomNavBar() {
   return (
     <header className="border-b px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
-        {/* Left side */}
+      
         <div className="flex items-center gap-2">
           {/* Mobile menu trigger */}
           <Popover>
@@ -167,7 +167,8 @@ export default function CustomNavBar() {
               <a href="/singup"> Criar conta</a>
             </Button>
           </div>
-        )}
+        )} 
+        
       </div>
     </header>
   );

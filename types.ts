@@ -12,6 +12,7 @@ export type User = {
   userDetail?: userDetail;
   imoveisTotalLenght: number;
   token: string;
+   userProfilePicture:string
 };
 export type PaginationInfo = {
   currentPage: number;

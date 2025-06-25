@@ -1,3 +1,4 @@
+'use client'
 import {
   BoltIcon,
   BookOpenIcon,
@@ -25,14 +26,47 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { User, userDetail } from "@/types"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { ExitIcon } from "@radix-ui/react-icons"
 
 export default function UserMenu(props:{userdata:User}) {
+  const queryClient = useQueryClient();
+
+  const logout = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Logout failed");
+      return;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+
+  const mutation = useMutation({
+    mutationFn: logout,
+    onSuccess: (data) => {
+      console.log("logout successful:", data);
+      queryClient.invalidateQueries();
+    },
+    onError: (error) => {
+      console.error("logout error:", error);
+    },
+  });
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
           <Avatar>
-            <AvatarImage src="./avatar.jpg" alt="Profile image" />
+            <AvatarImage src={props.userdata.userProfilePicture} alt="Profile image" />
             <AvatarFallback>{props.userdata.username[0]}</AvatarFallback>
           </Avatar>
         </Button>
@@ -56,9 +90,9 @@ export default function UserMenu(props:{userdata:User}) {
             <Layers2Icon size={16} className="opacity-60" aria-hidden="true" />
             <span>Option 2</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <BookOpenIcon size={16} className="opacity-60" aria-hidden="true" />
-            <span>Option 3</span>
+          <DropdownMenuItem onClick={() => mutation.mutate()}>
+            <ExitIcon className="opacity-60" aria-hidden="true" />
+            <span>Sair</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
    
