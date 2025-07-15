@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import {
   BoltIcon,
   BookOpenIcon,
@@ -7,15 +7,13 @@ import {
   PinIcon,
   Plus,
   PlusCircle,
+  User2,
   UserPenIcon,
-} from "lucide-react"
+  Wrench,
+} from "lucide-react";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +22,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { User, userDetail } from "@/types"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { ExitIcon } from "@radix-ui/react-icons"
+} from "@/components/ui/dropdown-menu";
+import { User } from "@/types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ExitIcon } from "@radix-ui/react-icons";
 
-export default function UserMenu(props:{userdata:User}) {
+export default function UserMenu(props: { userdata: User }) {
   const queryClient = useQueryClient();
 
   const logout = async () => {
@@ -48,8 +46,6 @@ export default function UserMenu(props:{userdata:User}) {
     }
   };
 
-
-
   const mutation = useMutation({
     mutationFn: logout,
     onSuccess: (data) => {
@@ -60,43 +56,58 @@ export default function UserMenu(props:{userdata:User}) {
       console.error("logout error:", error);
     },
   });
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-auto p-0 hover:bg-transparent">
           <Avatar>
-            <AvatarImage src={props.userdata.userProfilePicture} alt="Profile image" />
-            <AvatarFallback>{props.userdata.username[0]}</AvatarFallback>
+            <AvatarImage
+              className="object-cover"
+              src={props.userdata.profilePictureUrl}
+              alt="Profile image"
+            />
+            <AvatarFallback>{props.userdata.firstName[0]}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-w-64" align="end">
         <DropdownMenuLabel className="flex min-w-0 flex-col">
-          <span className="text-foreground truncate text-sm font-medium">
-            {props.userdata.username}
-          </span>
+          <div className="text-foreground truncate text-sm font-medium gap-x-1 flex w-full ">
+            <span>{props.userdata.firstName}</span>
+            <span>{props.userdata.lastName}</span>
+          </div>
           <span className="text-muted-foreground truncate text-xs font-normal">
-           {props.userdata.email}
+            {props.userdata.email}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          <a href={`/user/profile/${props.userdata.id}`}>
+            <DropdownMenuItem>
+              <User2 size={16} className="opacity-60" aria-hidden="true" />
+              <span> Meu perfil</span>
+            </DropdownMenuItem>{" "}
+          </a>
+          <a href={`/user/settings`}>
+            <DropdownMenuItem>
+              <Wrench size={16} className="opacity-60" aria-hidden="true" />
+              <span> Configurações de conta</span>
+            </DropdownMenuItem>{" "}
+          </a>
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem>
             <PlusCircle size={16} className="opacity-60" aria-hidden="true" />
             <span> Novo anúncio</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Layers2Icon size={16} className="opacity-60" aria-hidden="true" />
-            <span>Option 2</span>
-          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => mutation.mutate()}>
             <ExitIcon className="opacity-60" aria-hidden="true" />
             <span>Sair</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-   
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

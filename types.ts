@@ -1,18 +1,18 @@
-import { userDetail } from "./types";
 import { z } from "zod";
 // types/user.ts
 export type User = {
   id: string;
   email: string;
   password?: string;
-  username: string;
+  firstName: string;
+  lastName: string;
   imoveis?: Imovel[];
   session?: Session | null;
   createdAt: Date;
-  userDetail?: userDetail;
-  imoveisTotalLenght: number;
   token: string;
-   userProfilePicture:string
+  profilePictureUrl: string;
+  bio: string;
+  preferences: "all" | "verified";
 };
 export type PaginationInfo = {
   currentPage: number;
@@ -31,14 +31,7 @@ export type UserWithoutProperties = {
   username: string;
   session?: Session | null;
   createdAt: Date;
-  userDetail?: userDetail;
   imoveisTotalLenght: number;
-};
-
-export type userDetail = {
-  city: string;
-  state: string;
-  street: string;
 };
 export type Session = {
   id: string;

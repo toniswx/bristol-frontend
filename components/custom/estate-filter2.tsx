@@ -13,6 +13,7 @@ import { Locate, MapPin, Pin, PinIcon } from "lucide-react";
 import { Button } from "../ui/button";
 
 function LocationFilter() {
+  
   const [selectedLocation, setSelectedLocation] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const inputSearchLocationRef = useRef<HTMLInputElement>(null);

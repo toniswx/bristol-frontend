@@ -14,36 +14,42 @@ import {
 import Logo from "../custom/logo";
 import { Loader2, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getUserData } from "../AuthWrapper";
 import { useRouter } from "next/navigation";
 import UserMenu from "../navbar-components/user-menu";
+
+import LoginForm from "../forms/login";
+import NotificationMenu from "../navbar-components/notification-menu";
+
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog";
-import { DialogHeader } from "../ui/dialog";
-import LoginForm from "../forms/login";
-
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useId } from "react";
+import { useUserStore } from "@/lib/stores/currentUserStore";
 // Navigation links array to be used in both desktop and mobile menus
-const navigationLinks = [{ href: "#", label: "Home", active: true }];
+const navigationLinks = [{ href: "/home", label: "Home", active: true }];
 
 export default function CustomNavBar() {
-  const query = useQuery({
-    queryKey: ["userData"],
-    queryFn: getUserData,
-  });
+  const userData = useUserStore((state) => state.currentUser);
+  const setNull = useUserStore((state) => state.setNull);
 
-  const route = useRouter();
+  const isLoadingUserData = useUserStore((state) => state.isLoading);
+
+  if (userData === "NOT FOUND") {
+    return setNull(null);
+  }
 
   return (
     <header className="border-b px-4 md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
-      
         <div className="flex items-center gap-2">
-          {/* Mobile menu trigger */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -96,26 +102,23 @@ export default function CustomNavBar() {
               </NavigationMenu>
             </PopoverContent>
           </Popover>
-          {/* Main nav */}
           <div className="flex items-center gap-6">
-            <a href="#" className="text-primary hover:text-primary/90">
-              <svg
-                id="logo-72"
-                width="40"
-                height="44"
-                viewBox="0 0 53 44"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {" "}
-                <path
-                  d="M23.2997 0L52.0461 28.6301V44H38.6311V34.1553L17.7522 13.3607L13.415 13.3607L13.415 44H0L0 0L23.2997 0ZM38.6311 15.2694V0L52.0461 0V15.2694L38.6311 15.2694Z"
-                  className="ccustom"
-                  fill="#212326"
-                ></path>{" "}
-              </svg>
-            </a>
-            {/* Navigation menu */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="40"
+              height="40"
+              fill="none"
+              viewBox="0 0 40 40"
+            >
+              <path
+                fill="#F06225"
+                d="M20 0c11.046 0 20 8.954 20 20v14a6 6 0 0 1-6 6H21v-8.774c0-2.002.122-4.076 1.172-5.78a10 10 0 0 1 6.904-4.627l.383-.062a.8.8 0 0 0 0-1.514l-.383-.062a10 10 0 0 1-8.257-8.257l-.062-.383a.8.8 0 0 0-1.514 0l-.062.383a9.999 9.999 0 0 1-4.627 6.904C12.85 18.878 10.776 19 8.774 19H.024C.547 8.419 9.29 0 20 0Z"
+              ></path>
+              <path
+                fill="#F06225"
+                d="M0 21h8.774c2.002 0 4.076.122 5.78 1.172a10.02 10.02 0 0 1 3.274 3.274C18.878 27.15 19 29.224 19 31.226V40H6a6 6 0 0 1-6-6V21ZM40 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"
+              ></path>
+            </svg>
             <NavigationMenu className="max-md:hidden">
               <NavigationMenuList className="gap-2">
                 {navigationLinks.map((link, index) => (
@@ -133,42 +136,44 @@ export default function CustomNavBar() {
             </NavigationMenu>
           </div>
         </div>
-        {/* Right side */}
-        {query.data?.id ? (
-          <UserMenu userdata={query?.data} />
-        ) : (
-          <div className="space-x-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="cursor-pointer " variant={"secondary"}>
-                  Entrar
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="lg:w-1/5 rounded-sm">
-                <div className="w-full flex items-center justify-center flex-col ">
-                  <div>
-                    <Logo />
+        <div className="flex items-center justify-between  rounded-md border py-1  px-3 gap-x-4">
+          {userData?.id ? <NotificationMenu /> : null}
+          {userData?.id ? (
+            <UserMenu userdata={userData} />
+          ) : (
+            <div className="space-x-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Entrar</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full border"
+                      aria-hidden="true"
+                    >
+                      <Logo />
+                    </div>
+                    <DialogHeader>
+                      <DialogTitle className="sm:text-center">
+                        Bem vindo de volta
+                      </DialogTitle>
+                      <DialogDescription className="sm:text-center">
+                        Use suas credenciais para acessar sua conta.
+                      </DialogDescription>
+                    </DialogHeader>
                   </div>
-                  <DialogHeader className="flex items-center justify-center w-full my-2 ">
-                    <DialogTitle className=" flex items-center justify-center ">
-                      Login{" "}
-                    </DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
-                      Insira suas credenciais para acessar sua conta.
-                    </DialogDescription>
-                  </DialogHeader>
-                </div>
-                
-                <LoginForm />
-              
-              </DialogContent>
-            </Dialog>
-            <Button asChild size={"sm"} className="" variant={"default"}>
-              <a href="/singup"> Criar conta</a>
-            </Button>
-          </div>
-        )} 
-        
+
+                  <LoginForm />
+                </DialogContent>
+              </Dialog>
+
+              <Button asChild size={"sm"} className="" variant={"default"}>
+                <a href="/singup"> Criar conta</a>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

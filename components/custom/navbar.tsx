@@ -14,23 +14,15 @@ import LoginForm from "../forms/login";
 
 import Logo from "./logo";
 import { NavigationCustom } from "./customnavigation";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getUserData } from "../AuthWrapper";
 import { UserDropDownMenu } from "./user-menu";
 import Link from "next/link";
+import { useUserStore } from "@/lib/stores/currentUserStore";
 
 function Navbar() {
-  const query = useQuery({
-    queryKey: ["userData"],
-    queryFn: getUserData,
-  });
+  const userData = useUserStore((state) => state.currentUser);
+  const isLoadingUserData = useUserStore((state) => state.isLoading);
 
-  const route = useRouter();
 
-  const handleRouteToSingUp = () => {
-    route.push("/singup");
-  };
 
   return (
     <div className="flex items-center justify-around  my-6">
@@ -40,10 +32,11 @@ function Navbar() {
       </div>
 
       <div>
-        {" "}
-        {query.data?.id ? (
+        {isLoadingUserData}
+        {userData?.email}
+        {userData?.id ? (
           <div className="gap-x-2 flex">
-            <UserDropDownMenu data={query.data} />
+            <UserDropDownMenu data={userData} />
             <Link href={"/novo-anuncio"}>
               <Button size={"sm"}>Novo anuncio</Button>
             </Link>
@@ -70,9 +63,7 @@ function Navbar() {
               size={"sm"}
               className=""
               variant={"default"}
-              onClick={() => {
-                handleRouteToSingUp();
-              }}
+              onClick={() => {}}
             >
               Criar conta
             </Button>
