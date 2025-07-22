@@ -12,8 +12,43 @@ export type User = {
   token: string;
   profilePictureUrl: string;
   bio: string;
-  preferences: "all" | "verified";
+  preferences?: "all" | "verified";
+  metadata: AccountMetadata[];
+  recoveryEmail: string;
+  recoveryPhone: string;
 };
+
+export type AccountMetadata = {
+  id: string;
+  userId: string;
+
+  // Autenticação
+  emailVerified: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorSecret: string | null;
+
+  // Rastreamento
+  registrationIp: string | null;
+  registrationDevice: string | null;
+  deviceHash: string | null;
+
+  // Atividades
+  lastLogin: Date | null;
+  lastLoginIp: string | null;
+  loginCount: number;
+  failedLoginAttempts: number;
+
+  // Controle de versão
+  profileVersion: number;
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Segurança
+  accountLockedUntil: Date | null;
+};
+
 export type PaginationInfo = {
   currentPage: number;
   itemsPerPage: number;

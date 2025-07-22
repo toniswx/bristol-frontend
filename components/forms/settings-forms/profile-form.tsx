@@ -35,7 +35,6 @@ function ProfileForm({ userData }: { userData: User }) {
       .max(30, { message: "O nome não pode ultrapassar 25 caracteres." })
       .optional(),
 
-    preferences: z.enum(["all", "verified"]).optional(),
     bio: z
       .string()
       .min(10, {
@@ -53,7 +52,7 @@ function ProfileForm({ userData }: { userData: User }) {
       firstName: userData ? userData.firstName : undefined,
       lastName: userData ? userData.lastName : undefined,
       bio: userData ? userData.bio : undefined,
-      preferences: "all",
+    
     },
   });
 

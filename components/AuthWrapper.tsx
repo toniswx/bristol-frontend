@@ -9,14 +9,14 @@ export default function AuthWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  const { set, setLoading, setLoadingError, setNotFOUND } = useUserStore();
+  const { set, setLoading, setLoadingError, setNotFOUND, setNull } =
+    useUserStore();
 
   const { data, error } = useQuery({
     queryKey: ["userData"],
     queryFn: () => getUserData({ setLoading }),
     retry: (failureCount, error) => {
       if (failureCount > 1) {
-      
         setLoading(false);
         return false;
       } else {
@@ -35,6 +35,8 @@ export default function AuthWrapper({
     } else {
       if (error?.message === "Too many requests") {
         setLoadingError({ ...error, message: "Too many requests" });
+      } else {
+        setNull(null);
       }
     }
   }, [data, error, set]);

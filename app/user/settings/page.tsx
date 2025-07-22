@@ -1,13 +1,22 @@
 "use client";
 import React, { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Menu, Shield, User } from "lucide-react";
+import {
+  ArrowRightIcon,
+  Eclipse,
+  Lock,
+  Menu,
+  Shield,
+  User,
+} from "lucide-react";
 import ProfileForm from "@/components/forms/settings-forms/profile-form";
 import { useQuery } from "@tanstack/react-query";
 import Logo from "@/components/custom/logo";
 import { useUserStore } from "@/lib/stores/currentUserStore";
 import { Button } from "@/components/ui/button";
 import SecurityForm from "@/components/forms/settings-forms/security-form";
+import DetailForm from "@/components/post-form/detail";
+import DetailFormProfile from "@/components/forms/settings-forms/detail-form";
 
 function page() {
   const { isLoadingError, isLoading, currentUser } = useUserStore();
@@ -47,8 +56,8 @@ function page() {
     );
 
   return (
-    <div className="w-full h-screen flex items-start  justify-center">
-      <div className="w-2/3 h-2/3  mt-10  flex items-center gap-x-2 p-2 rounded-md  ">
+    <div className="w-full  h-screen flex items-center  flex-col justify-start">
+      <div className="w-2/3 h-2/3 my-10  flex items-center gap-x-2 p-2 rounded-md  ">
         <Tabs
           defaultValue="tab-1"
           orientation="vertical"
@@ -103,9 +112,7 @@ function page() {
               <SecurityForm userData={currentUser} />
             </TabsContent>
             <TabsContent value="tab-3">
-              <p className="text-muted-foreground px-4 py-3 text-xs">
-                Content for Tab 3
-              </p>
+              <DetailFormProfile userData={currentUser} />
             </TabsContent>
           </div>
         </Tabs>

@@ -111,6 +111,7 @@ import { MorphingText } from "../magicui/morphing-text";
 import { AnimatedCircularProgressBar } from "../magicui/animated-circular-progress-bar";
 import Logo from "../custom/logo";
 
+
 interface formErrorData {
   formError: {
     formName: string;
@@ -222,7 +223,7 @@ function SingupMulti() {
     return update.json();
   };
 
-  const createUser = async (values: Partial<FormData>) => {
+  const createUser = async (values: Partial<FormData>)  => {
     try {
       const data = await fetch("http://localhost:5000/users", {
         method: "POST",
@@ -232,18 +233,18 @@ function SingupMulti() {
         },
         body: JSON.stringify({
           email: values.email,
-          firstName:values.firstName ,
-          lastName:values.lastName,
+          firstName: values.firstName,
+          lastName: values.lastName,
           password: values.password,
           profilePictureUrl: "placeholder.com",
           bio: values.bio,
-          preferences: values.preferences,
         }),
       });
 
       const response = await data.json();
 
-      if (!response.token) {
+
+      if (!data.ok) {
         if (response.message === "Conflict") {
           setFormErrorData({
             formError: {
@@ -256,8 +257,7 @@ function SingupMulti() {
         throw new Error("Conflict");
       }
 
-      return response;
-
+      return response ;
     } catch (err) {
       throw err;
     }
@@ -265,9 +265,14 @@ function SingupMulti() {
   async function onSubmit() {
     setLoading(true);
     try {
-      const newUserData = await createUser(formData);
 
-     /* const pictureUrl = await uploadPicture(newUserData.token, newUserData.id);
+      const {preferences,...data} = formData
+
+      const newUserData = await createUser(data);
+
+      console.log(newUserData)
+
+      /* const pictureUrl = await uploadPicture(newUserData.token, newUserData.id);
 
       if (pictureUrl === undefined) return;
 
@@ -277,7 +282,9 @@ function SingupMulti() {
         queryClient.setQueryData(["userData"], update);
         router.push("/");
       } */
-     if (newUserData) {
+
+
+      if (newUserData) {
         queryClient.setQueryData(["userData"], newUserData);
         router.push("/");
       }
@@ -287,11 +294,9 @@ function SingupMulti() {
       }
       if (err.message === "ImageUploadError") {
         console.log(err);
-      } else {
-        toast("Alguma coisa deu errado, não se preocupe, não é sua culpa.");
       }
     }
-  } 
+  }
 
   const submit = () => {
     onSubmit();
@@ -883,7 +888,7 @@ const FormStepThree = ({
 
   const id = useId();
 
-/*  const [{ files }, { removeFile, openFileDialog, getInputProps }] =
+  /*  const [{ files }, { removeFile, openFileDialog, getInputProps }] =
     useFileUpload({
       accept: "image/*",
     });
@@ -908,7 +913,7 @@ const FormStepThree = ({
     } */
     handleSetData({ ...values });
   }
-/*
+  /*
   useEffect(() => {
     if (files.length > 0) {
       form.clearErrors();
@@ -982,7 +987,6 @@ const FormStepThree = ({
         <div className="">
           <div>
             <div className="grid grid-cols-3 gap-2   ">
-            
               <div className="col-span-2 gap-2 grid">
                 <FormField
                   control={form.control}

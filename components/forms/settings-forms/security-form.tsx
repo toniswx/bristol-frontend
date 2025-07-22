@@ -3,7 +3,16 @@ import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React, { useEffect, useMemo, useState } from "react";
 import { map, object, z } from "zod";
-
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -21,16 +30,30 @@ import { User } from "@/types";
 import { toast } from "sonner";
 import { useUserStore } from "@/lib/stores/currentUserStore";
 import {
+  AtSignIcon,
   BellIcon,
   CheckIcon,
   ChevronDownIcon,
+  CircleAlertIcon,
+  Clipboard,
+  CommandIcon,
+  Download,
+  EclipseIcon,
   EyeIcon,
   EyeOffIcon,
+  IdCard,
+  InfoIcon,
   LifeBuoyIcon,
   Link2Icon,
   LucideShieldUser,
+  Mail,
+  Plus,
+  PlusIcon,
+  Shield,
+  ShieldAlert,
   ShieldCheckIcon,
   XIcon,
+  ZapIcon,
 } from "lucide-react";
 import { Accordion as AccordionPrimitive } from "radix-ui";
 
@@ -43,310 +66,199 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MenubarRadioGroup } from "@/components/ui/menubar";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import OTP from "./otp-codigos";
+import { CloseIcon } from "@/components/tiptap-icons/close-icon";
+import { Badge } from "@/components/ui/badge";
+import ChangePassowordForm from "./change-password-form";
+import EmailVerification from "./email-verification";
+import RecoveryEmail from "./recovery-email";
 
 function SecurityForm({ userData }: { userData: User }) {
-  const { set } = useUserStore();
+  const sub_menu_account_protect = [
+    {
+      id: "1",
+      icon: userData.recoveryEmail ? (
+        <Mail className="w-5 h-5 text-green-300" />
+      ) : (
+        <Mail className="w-5 h-5 text-amber-500" />
+      ),
+      title: "Email de recuperação",
+      subicon: userData.recoveryEmail ? (
+        ""
+      ) : (
+        <Badge className="bg-amber-600/10 dark:bg-amber-600/20 hover:bg-amber-600/10 text-amber-500 border-amber-600/60 shadow-none rounded-full">
+          {" "}
+          <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-2" />{" "}
+          Necessita de atualização
+        </Badge>
+      ),
 
-  const profileSchema = z.object({
-    oldPassword: z
-      .string()
-      .min(8, { message: "Senha precisa ter pelo menos 8 caracteres." })
-      .regex(/[0-9]/, { message: "At least 1 number" })
-      .regex(/[a-z]/, { message: "At least 1 lowercase letter" })
-      .regex(/[A-Z]/, { message: "At least 1 uppercase letter" }),
-    newPassword: z
-      .string()
-      .min(8, { message: "Senha precisa ter pelo menos 8 caracteres." })
-      .regex(/[0-9]/, { message: "At least 1 number" })
-      .regex(/[a-z]/, { message: "At least 1 lowercase letter" })
-      .regex(/[A-Z]/, { message: "At least 1 uppercase letter" }),
-    desconect: z.boolean().default(false).optional(),
-    preferences: z.enum(["all", "verified"]),
-  });
-
-  const form = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      oldPassword: "",
-      newPassword: "",
-      preferences: userData ? userData.preferences : "all",
+      content: (
+        <div>
+          <RecoveryEmail userData={userData} />
+        </div>
+      ),
     },
-  });
+    {
+      id: "2",
+      icon: <ShieldAlert className="w-5 h-5 text-amber-500" />,
+      title: "Códigos de Recuperação de Conta",
+      subicon: userData.metadata[0].twoFactorEnabled ? (
+        ""
+      ) : (
+        <Badge className="bg-amber-600/10 dark:bg-amber-600/20 hover:bg-amber-600/10 text-amber-500 border-amber-600/60 shadow-none rounded-full">
+          {" "}
+          <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-2" />{" "}
+          Necessita de atualização
+        </Badge>
+      ),
+      content: (
+        <div className="border px-10 py-5 rounded-md  ">
+          {" "}
+          <div className="rounded-md  border-amber-500/50  py-3 text-amber-600 flex items-center justify-between">
+            <div className="rounded-md border border-amber-500/50 px-4 py-3 text-amber-600">
+              <p className="text-sm">
+                <InfoIcon
+                  className="me-3 -mt-0.5 inline-flex opacity-60"
+                  size={16}
+                  aria-hidden="true"
+                />
+                Estes códigos são sua última opção de recuperação. Guarde-os em
+                um local seguro e nunca os compartilhe.
+              </p>
+            </div>
+          </div>
+          <div className="text-center py-4">
+            <p className="text-muted-foreground mb-4">
+              Você ainda não gerou códigos de backup.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Cada código pode ser usado apenas uma vez. Novos códigos invalidam
+            os anteriores.
+          </p>
+        </div>
+      ),
+    },
+  ];
+  const sub_menu_email = [
+    {
+      id: "1",
+      icon: userData.metadata[0].emailVerified ? (
+        <Mail className="w-5 h-5 text-green-300" />
+      ) : (
+        <Mail className="w-5 h-5 text-amber-500" />
+      ),
+      title: "Verificação de email",
+      subicon: userData.metadata[0].emailVerified ? (
+        ""
+      ) : (
+        <Badge className="bg-amber-600/10 dark:bg-amber-600/20 hover:bg-amber-600/10 text-amber-500 border-amber-600/60 shadow-none rounded-full">
+          {" "}
+          <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-2" />{" "}
+          Necessita de atualização
+        </Badge>
+      ),
 
-  const [password, setPassword] = useState("");
-  const [isVisible, setIsVisible] = useState<boolean>(false);
-
-  const toggleVisibility = () => setIsVisible((prevState) => !prevState);
-
-  const checkStrength = (pass: string) => {
-    const requirements = [
-      { regex: /.{8,}/, text: "Pelo menos 8 caracteres" },
-      { regex: /[0-9]/, text: "Pelo menos 1 número" },
-      { regex: /[a-z]/, text: " Pelo menos 1 caractere minúsculo " },
-      { regex: /[A-Z]/, text: "Pelo menos 1 caractere maiúsculo " },
-    ];
-
-    return requirements.map((req) => ({
-      met: req.regex.test(pass),
-      text: req.text,
-    }));
-  };
-  const strength = checkStrength(password);
-
-  const strengthScore = useMemo(() => {
-    return strength.filter((req) => req.met).length;
-  }, [strength]);
-
-  const getStrengthColor = (score: number) => {
-    if (score === 0) return "bg-border";
-    if (score <= 1) return "bg-red-500";
-    if (score <= 2) return "bg-orange-500";
-    if (score === 3) return "bg-amber-500";
-    return "bg-emerald-500";
-  };
-
-  const getStrengthText = (score: number) => {
-    if (score === 0) return "Digite uma senha";
-    if (score <= 2) return "Senha fraca";
-    if (score === 3) return "Senha media";
-    return "Senha forte";
-  };
-
-  async function onSubmit(values: z.infer<typeof profileSchema>) {
-    toast.promise(
-      (async () => {
-        try {
-          const response = await fetch("http://localhost:5000/users", {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(values),
-          });
-
-          const data = await response.json();
-
-          if (data.message && data.message[0].includes("")) {
-            form.setError("root", {
-              message: "",
-            });
-            throw new Error();
-          }
-          if (data.error) throw new Error(data.error);
-
-          form.control._disableForm(false);
-
-          set(data);
-          return data;
-        } catch (error) {
-          form.control._disableForm(false);
-          throw error;
-        }
-      })(),
-      {
-        loading: "Atualizando perfil...",
-        success: "Perfil atualizado com sucesso!",
-        error: (err) => `Alguma coisa deu errado, tente novamente mais tarde.`,
-      }
-    );
-  }
+      content: (
+        <div>
+          <EmailVerification userData={userData} />
+        </div>
+      ),
+    },
+  ];
   const items = [
     {
       id: "1",
       icon: LucideShieldUser,
       title: "Gerenciamento de Senha",
       sub: "Atualize sua senha de acesso",
+      customIcon: "",
       content: (
         <div className="my-3">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="">
-                <div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <FormField
-                      control={form.control}
-                      name="oldPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Antiga</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder=""
-                              {...field}
-                              className=""
-                              type="password"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="newPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nova</FormLabel>
-                          <FormControl>
-                            <div>
-                              <div className="*:not-first:mt-2">
-                                <div className="relative">
-                                  <Input
-                                    {...field}
-                                    className="pe-9"
-                                    placeholder=""
-                                    type={isVisible ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => {
-                                      setPassword(e.target.value);
-                                      form.setValue(
-                                        "newPassword",
-                                        e.target.value
-                                      );
-                                    }}
-                                  />
-                                  <button
-                                    className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
-                                    type="button"
-                                    onClick={toggleVisibility}
-                                    aria-label={
-                                      isVisible
-                                        ? "Hide password"
-                                        : "Show password"
-                                    }
-                                    aria-pressed={isVisible}
-                                    aria-controls="password"
-                                  >
-                                    {isVisible ? (
-                                      <EyeOffIcon
-                                        size={16}
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <EyeIcon size={16} aria-hidden="true" />
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Password strength indicator */}
-                              <div
-                                className="bg-border mt-3 mb-4 h-1 w-full overflow-hidden rounded-full"
-                                role="progressbar"
-                                aria-valuenow={strengthScore}
-                                aria-valuemin={0}
-                                aria-valuemax={4}
-                                aria-label="Password strength"
-                              >
-                                <div
-                                  className={`h-full ${getStrengthColor(
-                                    strengthScore
-                                  )} transition-all duration-500 ease-out`}
-                                  style={{
-                                    width: `${(strengthScore / 4) * 100}%`,
-                                  }}
-                                ></div>
-                              </div>
-
-                              {/* Password strength description */}
-                              <p
-                                id={`${1}-description`}
-                                className="text-foreground mb-2 text-sm font-medium"
-                              >
-                                {getStrengthText(strengthScore)}. Deve conter:
-                              </p>
-
-                              {/* Password requirements list */}
-                              <ul
-                                className="space-y-1.5"
-                                aria-label="Password requirements"
-                              >
-                                {strength.map((req, index) => (
-                                  <li
-                                    key={index}
-                                    className="flex items-center gap-2"
-                                  >
-                                    {req.met ? (
-                                      <CheckIcon
-                                        size={16}
-                                        className="text-emerald-500"
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <XIcon
-                                        size={16}
-                                        className="text-muted-foreground/80"
-                                        aria-hidden="true"
-                                      />
-                                    )}
-                                    <span
-                                      className={`text-xs ${
-                                        req.met
-                                          ? "text-emerald-600"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {req.text}
-                                      <span className="sr-only">
-                                        {req.met
-                                          ? " - Requirement met"
-                                          : " - Requirement not met"}
-                                      </span>
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                <FormField
-                  control={form.control}
-                  name="desconect"
-                  render={({ field }) => (
-                    <FormItem className=" ">
-                      <FormControl>
-                        <div className="inline-flex items-center gap-2 mt-6">
-                          <Switch id="desc  " />
-                          <Label htmlFor="desc  ">
-                            Me desconectar de outros dispositivos
-                          </Label>
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="w-full flex items-center justify-between">
-                <Button disabled={!form.formState.isDirty}>Salvar</Button>
-              </div>
-            </form>
-          </Form>
+          <ChangePassowordForm userData={userData} />
         </div>
       ),
     },
 
     {
-      id: "3",
-      icon: ShieldCheckIcon,
-      title: "Recuperação de conta",
-      sub: "Proteja sua conta com uma segurança adicional",
-      content:
-        "Protect your account with two-factor authentication. You can use authenticator apps like Google Authenticator or Authy, receive SMS codes, or use security keys like YubiKey. We recommend using an authenticator app for the most secure experience.",
+      id: "2",
+      icon: IdCard,
+      title: "Verificação de credenciais",
+      sub: "Verifique seu email para usar a plataforma com mais segurança.",
+
+      content: (
+        <div>
+          <Separator className="my-2" />
+          <Accordion
+            type="single"
+            collapsible
+            className="w-full"
+            defaultValue="0"
+          >
+            {sub_menu_email.map((item) => (
+              <AccordionItem value={item.id} key={item.id} className="py-2">
+                <AccordionPrimitive.Header className="flex">
+                  <AccordionPrimitive.Trigger className="focus-visible:ring-ring/50 flex flex-1 items-center justify-between gap-4 rounded-md py-2 text-left text-sm text-[15px] leading-6 font-semibold transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&>svg>path:last-child]:origin-center [&>svg>path:last-child]:transition-all [&>svg>path:last-child]:duration-200 [&[data-state=open]>svg]:rotate-180 [&[data-state=open]>svg>path:last-child]:rotate-90 [&[data-state=open]>svg>path:last-child]:opacity-0">
+                    <span className="flex items-center gap-3">
+                      {item.icon}
+                      <p className="text-sm">{item.title}</p>
+                      {item.subicon}
+                    </span>
+                    <PlusIcon
+                      size={16}
+                      className="pointer-events-none shrink-0 opacity-60 transition-transform duration-200"
+                      aria-hidden="true"
+                    />
+                  </AccordionPrimitive.Trigger>
+                </AccordionPrimitive.Header>
+                <AccordionContent className="">{item.content}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      ),
     },
     {
-      id: "4",
-      icon: LifeBuoyIcon,
-      title: "Contact support",
-      sub: "We're here to help 24/7",
-      content:
-        "Our support team is available around the ClockIcon to assist you. For billing inquiries, technical issues, or general questions, you can reach us through live chat, email at support@example.com, or schedule a call with our technical team. Premium support is available for enterprise customers.",
+      id: "3",
+      icon: ShieldCheckIcon,
+      title: "Proteção de conta",
+      sub: "Proteja sua conta com uma segurança adicional",
+
+      content: (
+        <div>
+          <Separator className="my-2" />
+          <Accordion
+            type="single"
+            collapsible
+            className="w-full"
+            defaultValue="0"
+          >
+            {sub_menu_account_protect.map((item) => (
+              <AccordionItem value={item.id} key={item.id} className="py-2">
+                <AccordionPrimitive.Header className="flex">
+                  <AccordionPrimitive.Trigger className="focus-visible:ring-ring/50 flex flex-1 items-center justify-between gap-4 rounded-md py-2 text-left text-sm text-[15px] leading-6 font-semibold transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&>svg>path:last-child]:origin-center [&>svg>path:last-child]:transition-all [&>svg>path:last-child]:duration-200 [&[data-state=open]>svg]:rotate-180 [&[data-state=open]>svg>path:last-child]:rotate-90 [&[data-state=open]>svg>path:last-child]:opacity-0">
+                    <span className="flex items-center gap-3">
+                      {item.icon}
+                      <p className="text-sm">{item.title}</p>
+                      {item.subicon}
+                    </span>
+                    <PlusIcon
+                      size={16}
+                      className="pointer-events-none shrink-0 opacity-60 transition-transform duration-200"
+                      aria-hidden="true"
+                    />
+                  </AccordionPrimitive.Trigger>
+                </AccordionPrimitive.Header>
+                <AccordionContent className="">{item.content}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      ),
     },
   ];
 

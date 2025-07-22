@@ -43,7 +43,9 @@ export default function CustomNavBar() {
   const isLoadingUserData = useUserStore((state) => state.isLoading);
 
   if (userData === "NOT FOUND") {
-    return setNull(null);
+    setNull(null);
+
+    return <></>;
   }
 
   return (

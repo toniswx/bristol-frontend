@@ -58,6 +58,7 @@
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.7.3",
+    "input-otp": "^1.4.2",
     "lexical": "^0.32.1",
     "lucide-react": "^0.487.0",
     "motion": "^12.19.1",
